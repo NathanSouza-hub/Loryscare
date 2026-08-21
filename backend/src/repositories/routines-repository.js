@@ -70,19 +70,41 @@ async function existsOnDate(id, date, userId) {
   return result.rowCount > 0;
 }
 
-async function setCompletion(data) {
+async function findCompletion(routineId, date) {
+  const result = await pool.query(
+    `SELECT c.id, c.status, c.completed_at AS "completedAt",
+            c.author_profile_id AS "authorProfileId", cp.name AS "authorProfileName"
+     FROM routine_completions c
+     LEFT JOIN caregiver_profiles cp ON cp.id = c.author_profile_id
+     WHERE c.routine_id = $1 AND c.scheduled_date = $2`,
+    [routineId, date],
+  );
+  return result.rows[0] ?? null;
+}
+
+async function insertCompletion(data) {
   const result = await pool.query(
     `INSERT INTO routine_completions (routine_id, scheduled_date, status, completed_at, author_profile_id)
      VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (routine_id, scheduled_date) DO UPDATE SET status = EXCLUDED.status,
-       completed_at = EXCLUDED.completed_at, author_profile_id = EXCLUDED.author_profile_id,
-       updated_at = CURRENT_TIMESTAMP
+     ON CONFLICT (routine_id, scheduled_date) DO NOTHING
      RETURNING id, status, completed_at AS "completedAt", author_profile_id AS "authorProfileId"`,
     [data.routineId, data.date, data.status, data.completedAt, data.authorProfileId],
+  );
+  return result.rows[0] ?? null;
+}
+
+async function updateCompletion(id, data) {
+  const result = await pool.query(
+    `UPDATE routine_completions
+     SET status = $1, completed_at = $2, updated_at = CURRENT_TIMESTAMP
+     WHERE id = $3
+     RETURNING id, status, completed_at AS "completedAt", author_profile_id AS "authorProfileId"`,
+    [data.status, data.completedAt, id],
   );
   return result.rows[0];
 }
 
 module.exports = Object.freeze({
-  create, existsOnDate, getAll, getDaily, patientBelongsToUser, remove, setCompletion, update,
+  create, existsOnDate, findCompletion, getAll, getDaily, insertCompletion,
+  patientBelongsToUser, remove, update, updateCompletion,
 });

@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const { describe, it } = require("node:test");
 const RoutineNotFoundError = require("../src/errors/routine-not-found-error");
 const RoutineValidationError = require("../src/errors/routine-validation-error");
+const RoutineCompletionConflictError = require("../src/errors/routine-completion-conflict-error");
 const createRoutinesService = require("../src/services/routines-service");
 
 function validRoutine(overrides = {}) {
@@ -30,14 +31,16 @@ describe("routines service", () => {
     assert.equal(received.isFixed, true);
   });
 
-  it("inclui o profileId de quem concluiu a atividade", async () => {
-    let received;
+  it("insere a primeira conclusão com o profileId de quem concluiu", async () => {
+    let inserted;
     const service = createRoutinesService({
       existsOnDate: async () => true,
-      async setCompletion(data) { received = data; return { id: "1" }; },
+      findCompletion: async () => null,
+      async insertCompletion(data) { inserted = data; return { id: "1", ...data }; },
     });
     await service.setCompletion("3", { date: "2026-08-18", status: "completed" }, "9", "4");
-    assert.equal(received.authorProfileId, "4");
+    assert.equal(inserted.authorProfileId, "4");
+    assert.ok(inserted.completedAt instanceof Date);
   });
 
   it("rejeita cadastro para paciente de outro usuário", async () => {
@@ -71,13 +74,67 @@ describe("routines service", () => {
   });
 
   it("registra uma atividade concluída", async () => {
-    let received;
+    let inserted;
     const service = createRoutinesService({
       existsOnDate: async () => true,
-      async setCompletion(data) { received = data; return { id: "2" }; },
+      findCompletion: async () => null,
+      async insertCompletion(data) { inserted = data; return { id: "2", ...data }; },
     });
     await service.setCompletion("1", { date: "2026-08-20", status: "completed" });
-    assert.ok(received.completedAt instanceof Date);
+    assert.ok(inserted.completedAt instanceof Date);
+  });
+
+  it("trata uma segunda chamada do MESMO autor como edição, sem trocar o autor", async () => {
+    let updatedId;
+    const service = createRoutinesService({
+      existsOnDate: async () => true,
+      findCompletion: async () => ({
+        id: "6", status: "completed", completedAt: new Date("2026-08-20T09:00:00Z"),
+        authorProfileId: "4", authorProfileName: "Nathan",
+      }),
+      async updateCompletion(id, data) { updatedId = id; return { id, ...data, authorProfileId: "4" }; },
+    });
+    const result = await service.setCompletion(
+      "1", { date: "2026-08-20", status: "skipped" }, "9", "4",
+    );
+    assert.equal(updatedId, "6");
+    assert.equal(result.authorProfileId, "4");
+  });
+
+  it("rejeita a conclusão de OUTRO autor com RoutineCompletionConflictError", async () => {
+    const service = createRoutinesService({
+      existsOnDate: async () => true,
+      findCompletion: async () => ({
+        id: "6", status: "completed", completedAt: new Date("2026-08-20T09:00:00Z"),
+        authorProfileId: "4", authorProfileName: "Nathan",
+      }),
+      updateCompletion: async () => assert.fail("não deveria editar"),
+    });
+    await assert.rejects(
+      service.setCompletion("1", { date: "2026-08-20", status: "completed" }, "9", "7"),
+      RoutineCompletionConflictError,
+    );
+  });
+
+  it("condição de corrida: dois cuidadores concluindo juntos — o segundo recebe conflito", async () => {
+    let findCalls = 0;
+    const service = createRoutinesService({
+      existsOnDate: async () => true,
+      async findCompletion() {
+        findCalls += 1;
+        if (findCalls === 1) return null;
+        return {
+          id: "6", status: "completed", completedAt: new Date("2026-08-20T09:00:00Z"),
+          authorProfileId: "4", authorProfileName: "Nathan",
+        };
+      },
+      insertCompletion: async () => null,
+      updateCompletion: async () => assert.fail("não deveria editar"),
+    });
+    await assert.rejects(
+      service.setCompletion("1", { date: "2026-08-20", status: "completed" }, "9", "7"),
+      RoutineCompletionConflictError,
+    );
   });
 
   it("rejeita conclusão fora do período da rotina", async () => {

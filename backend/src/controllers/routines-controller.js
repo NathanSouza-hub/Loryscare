@@ -1,10 +1,13 @@
 const RoutineNotFoundError = require("../errors/routine-not-found-error");
 const RoutineValidationError = require("../errors/routine-validation-error");
+const RoutineCompletionConflictError = require("../errors/routine-completion-conflict-error");
 
 function handle(error, response, next) {
   if (error instanceof RoutineValidationError) response.status(400).json({ error: error.message, details: error.details });
   else if (error instanceof RoutineNotFoundError) response.status(404).json({ error: error.message });
-  else next(error);
+  else if (error instanceof RoutineCompletionConflictError) {
+    response.status(409).json({ error: error.message, authorProfileName: error.authorProfileName, completedAt: error.completedAt });
+  } else next(error);
 }
 
 function createRoutinesController(service, changeBus) {

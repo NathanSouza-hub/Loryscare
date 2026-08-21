@@ -1,5 +1,6 @@
 const RoutineNotFoundError = require("../errors/routine-not-found-error");
 const RoutineValidationError = require("../errors/routine-validation-error");
+const RoutineCompletionConflictError = require("../errors/routine-completion-conflict-error");
 
 function isDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -72,11 +73,27 @@ function createRoutinesService(repository) {
     if (!new Set(["completed", "skipped"]).has(status)) details.status = "Status inválido";
     if (Object.keys(details).length) throw new RoutineValidationError(details);
     if (!(await repository.existsOnDate(id, date, userId))) throw new RoutineNotFoundError("Atividade não encontrada nesta data");
-    return repository.setCompletion({
-      routineId: id, date, status,
-      completedAt: status === "completed" ? new Date() : null,
-      authorProfileId: profileId ?? null,
-    });
+
+    const completedAt = status === "completed" ? new Date() : null;
+    const authorProfileId = profileId ?? null;
+
+    function applyEdit(record) {
+      if (record.authorProfileId != null && String(record.authorProfileId) !== String(authorProfileId)) {
+        throw new RoutineCompletionConflictError({
+          authorProfileName: record.authorProfileName,
+          completedAt: record.completedAt,
+        });
+      }
+      return repository.updateCompletion(record.id, { status, completedAt });
+    }
+
+    const existing = await repository.findCompletion(id, date);
+    if (!existing) {
+      const inserted = await repository.insertCompletion({ routineId: id, date, status, completedAt, authorProfileId });
+      if (inserted) return inserted;
+      return applyEdit(await repository.findCompletion(id, date));
+    }
+    return applyEdit(existing);
   }
   return Object.freeze({ create, getAll, getDaily, remove, setCompletion, update });
 }
