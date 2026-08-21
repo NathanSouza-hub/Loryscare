@@ -98,10 +98,11 @@ function renderNotes() {
     const row = document.createElement("tr");
     row.className = "highlighted-row";
     const actions = document.createElement("td");
-    actions.append(
-      button(icon("pencil"), "edit", item.id, "table-action table-action--icon", "Editar"),
-      button(icon("trash"), "delete", item.id, "table-action table-action--icon table-action--danger", "Excluir"),
-    );
+    const isOwnNote = item.authorProfileId == null || String(item.authorProfileId) === String(CaregiverContext.getCurrentId());
+    if (isOwnNote) {
+      actions.append(button(icon("pencil"), "edit", item.id, "table-action table-action--icon", "Editar"));
+    }
+    actions.append(button(icon("trash"), "delete", item.id, "table-action table-action--icon table-action--danger", "Excluir"));
     const dateTime = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(`${item.noteDate}T${item.noteTime}:00`));
     const textCell = cell(item.noteText);
     textCell.className = "table-cell--wrap";
