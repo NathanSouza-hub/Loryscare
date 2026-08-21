@@ -107,11 +107,16 @@ async function loadDaily() {
   const labels = { pending: "Pendente", taken: "Administrado", skipped: "Ignorado" };
   doses.forEach((dose) => {
     const row = document.createElement("tr"); const actions = document.createElement("td");
+    const lockedByOther = dose.status !== "pending"
+      && dose.authorProfileId != null
+      && String(dose.authorProfileId) !== String(CaregiverContext.getCurrentId());
     [
       { iconName: "check", action: "taken", title: "Administrado", baseClass: "table-action--success", doneClass: "table-action--done" },
       { iconName: "x", action: "skipped", title: "Ignorado", baseClass: "table-action--danger", doneClass: "table-action--skipped" },
     ].forEach(({ iconName, action, title, baseClass, doneClass }) => {
-      const doseButton = button(icon(iconName), action, dose.scheduleId, `table-action table-action--icon ${baseClass}${dose.status === action ? ` ${doneClass}` : ""}`, title);
+      const doseTitle = lockedByOther ? `Já registrado por ${dose.authorProfileName}` : title;
+      const doseButton = button(icon(iconName), action, dose.scheduleId, `table-action table-action--icon ${baseClass}${dose.status === action ? ` ${doneClass}` : ""}`, doseTitle);
+      doseButton.disabled = lockedByOther;
       actions.append(doseButton);
     });
     actions.dataset.medicationId = dose.medicationId;
@@ -161,7 +166,10 @@ dailyBody.addEventListener("click", async (event) => {
   try {
     await MedicationsRepository.setAdministration(medicationId, target.dataset.id, { date: dailyDate.value, status: target.dataset.action });
     await loadDaily();
-  } catch (error) { message.textContent = error.message; }
+  } catch (error) {
+    message.textContent = error.message;
+    await loadDaily();
+  }
 });
 
 cancelButton.addEventListener("click", () => { finishEditing(); showTab("configuracao"); });
