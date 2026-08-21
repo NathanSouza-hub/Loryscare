@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const { describe, it } = require("node:test");
 const NursingNoteNotFoundError = require("../src/errors/nursing-note-not-found-error");
 const NursingNoteValidationError = require("../src/errors/nursing-note-validation-error");
+const NursingNoteOwnershipError = require("../src/errors/nursing-note-ownership-error");
 const createNursingNotesService = require("../src/services/nursing-notes-service");
 
 function validNote(overrides = {}) {
@@ -62,8 +63,11 @@ describe("nursing notes service", () => {
   });
 
   it("informa quando a anotação não existe ao atualizar", async () => {
-    const service = createNursingNotesService({ update: async () => false });
-    await assert.rejects(service.update("9", validNote()), NursingNoteNotFoundError);
+    const service = createNursingNotesService({
+      findById: async () => ({ id: "9", authorProfileId: null }),
+      update: async () => false,
+    });
+    await assert.rejects(service.update("9", validNote(), "1"), NursingNoteNotFoundError);
   });
 
   it("informa quando a anotação não existe ao remover", async () => {
@@ -84,5 +88,52 @@ describe("nursing notes service", () => {
   it("rejeita filtro de turno inválido", async () => {
     const service = createNursingNotesService({ getAll: async () => assert.fail() });
     await assert.rejects(service.getAll("1", "9", { shift: "Inválido" }), NursingNoteValidationError);
+  });
+
+  it("permite que o autor original edite sua própria anotação", async () => {
+    let updatedId;
+    const service = createNursingNotesService({
+      findById: async () => ({ id: "5", authorProfileId: "4" }),
+      async update(id) { updatedId = id; return true; },
+    });
+    await service.update("5", {
+      noteDate: "2026-08-20", noteTime: "22:00", shift: "Noite", noteText: "Texto",
+    }, "9", "4");
+    assert.equal(updatedId, "5");
+  });
+
+  it("rejeita edição de outro perfil com NursingNoteOwnershipError", async () => {
+    const service = createNursingNotesService({
+      findById: async () => ({ id: "5", authorProfileId: "4" }),
+      update: async () => assert.fail("não deveria editar"),
+    });
+    await assert.rejects(
+      service.update("5", {
+        noteDate: "2026-08-20", noteTime: "22:00", shift: "Noite", noteText: "Texto",
+      }, "9", "7"),
+      NursingNoteOwnershipError,
+    );
+  });
+
+  it("anotação sem author_profile_id (legado) pode ser editada por qualquer perfil", async () => {
+    let updatedId;
+    const service = createNursingNotesService({
+      findById: async () => ({ id: "5", authorProfileId: null }),
+      async update(id) { updatedId = id; return true; },
+    });
+    await service.update("5", {
+      noteDate: "2026-08-20", noteTime: "22:00", shift: "Noite", noteText: "Texto",
+    }, "9", "7");
+    assert.equal(updatedId, "5");
+  });
+
+  it("informa quando a anotação não existe", async () => {
+    const service = createNursingNotesService({ findById: async () => null });
+    await assert.rejects(
+      service.update("99", {
+        noteDate: "2026-08-20", noteTime: "22:00", shift: "Noite", noteText: "Texto",
+      }, "9", "4"),
+      NursingNoteNotFoundError,
+    );
   });
 });

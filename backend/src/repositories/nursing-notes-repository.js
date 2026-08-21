@@ -54,6 +54,16 @@ async function update(id, note, userId) {
   return result.rowCount > 0;
 }
 
+async function findById(id, userId) {
+  const result = await pool.query(
+    `SELECT id, author_profile_id AS "authorProfileId"
+     FROM nursing_notes
+     WHERE id = $1 AND patient_id IN (SELECT id FROM patients WHERE user_id = $2)`,
+    [id, userId],
+  );
+  return result.rows[0] ?? null;
+}
+
 async function remove(id, userId) {
   const result = await pool.query(
     "DELETE FROM nursing_notes WHERE id = $1 AND patient_id IN (SELECT id FROM patients WHERE user_id = $2) RETURNING id",
@@ -62,4 +72,4 @@ async function remove(id, userId) {
   return result.rowCount > 0;
 }
 
-module.exports = Object.freeze({ create, getAll, patientBelongsToUser, remove, update });
+module.exports = Object.freeze({ create, findById, getAll, patientBelongsToUser, remove, update });

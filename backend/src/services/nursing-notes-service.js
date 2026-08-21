@@ -1,5 +1,6 @@
 const NursingNoteNotFoundError = require("../errors/nursing-note-not-found-error");
 const NursingNoteValidationError = require("../errors/nursing-note-validation-error");
+const NursingNoteOwnershipError = require("../errors/nursing-note-ownership-error");
 
 const VALID_SHIFTS = new Set(["Manhã", "Tarde", "Noite", "Madrugada"]);
 
@@ -48,8 +49,13 @@ function createNursingNotesService(repository) {
     if (shift && !VALID_SHIFTS.has(shift)) throw new NursingNoteValidationError({ shift: "Informe um turno válido" });
     return repository.getAll(patientId, userId, { date: date || null, shift: shift || null });
   }
-  async function update(id, input, userId) {
+  async function update(id, input, userId, profileId) {
     validateId(id);
+    const existing = await repository.findById(id, userId);
+    if (!existing) throw new NursingNoteNotFoundError();
+    if (existing.authorProfileId != null && String(existing.authorProfileId) !== String(profileId ?? "")) {
+      throw new NursingNoteOwnershipError();
+    }
     if (!(await repository.update(id, validateNote(input ?? {}, true), userId))) throw new NursingNoteNotFoundError();
   }
   async function remove(id, userId) {
