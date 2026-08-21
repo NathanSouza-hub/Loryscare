@@ -26,6 +26,7 @@ const VitalsRepository = (() => {
       bloodGlucose: record.bloodGlucose ?? "",
       notes: record.notes ?? "",
       authorProfileName: record.authorProfileName ?? "",
+      authorProfileId: record.authorProfileId ?? null,
     };
   }
 

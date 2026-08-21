@@ -100,30 +100,34 @@ function getFilteredRecords() {
     .sort((first, second) => `${second.date}T${second.time}`.localeCompare(`${first.date}T${first.time}`));
 }
 
-function createActionsCell(recordId) {
+function createActionsCell(record) {
   const cell = document.createElement("td");
   const actions = document.createElement("div");
   actions.className = "table-actions";
 
-  const editButton = document.createElement("button");
-  editButton.type = "button";
-  editButton.className = "table-action table-action--icon";
-  editButton.dataset.action = "edit";
-  editButton.dataset.id = recordId;
-  editButton.innerHTML = icon("pencil");
-  editButton.title = "Editar";
-  editButton.setAttribute("aria-label", "Editar");
+  const isOwnRecord = record.authorProfileId == null || String(record.authorProfileId) === String(CaregiverContext.getCurrentId());
+  if (isOwnRecord) {
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.className = "table-action table-action--icon";
+    editButton.dataset.action = "edit";
+    editButton.dataset.id = record.id;
+    editButton.innerHTML = icon("pencil");
+    editButton.title = "Editar";
+    editButton.setAttribute("aria-label", "Editar");
+    actions.append(editButton);
+  }
 
   const deleteButton = document.createElement("button");
   deleteButton.type = "button";
   deleteButton.className = "table-action table-action--icon table-action--danger";
   deleteButton.dataset.action = "delete";
-  deleteButton.dataset.id = recordId;
+  deleteButton.dataset.id = record.id;
   deleteButton.innerHTML = icon("trash");
   deleteButton.title = "Excluir";
   deleteButton.setAttribute("aria-label", "Excluir");
 
-  actions.append(editButton, deleteButton);
+  actions.append(deleteButton);
   cell.append(actions);
   return cell;
 }
@@ -148,7 +152,7 @@ function renderHistory() {
       createCell(record.bloodGlucose ? `${record.bloodGlucose} mg/dL` : "—"),
       createCell(record.notes),
       createCell(record.authorProfileName),
-      createActionsCell(record.id),
+      createActionsCell(record),
     );
     historyBody.append(row);
   });
