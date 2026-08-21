@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const { describe, it } = require("node:test");
 const ValidationError = require("../src/errors/validation-error");
+const VitalSignOwnershipError = require("../src/errors/vital-sign-ownership-error");
 const createVitalsController = require("../src/controllers/vitals-controller");
 
 function createResponse() {
@@ -117,6 +118,21 @@ describe("vitals controller", () => {
 
     assert.equal(response.statusCode, 204);
     assert.equal(response.body, null);
+  });
+
+  it("retorna 403 quando outro perfil tenta editar o registro", async () => {
+    const ownershipError = new VitalSignOwnershipError();
+    const controller = createVitalsController({
+      update: async () => {
+        throw ownershipError;
+      },
+    }, { publish: () => {} });
+    const response = createResponse();
+
+    await controller.update({ params: { id: "1" }, body: {} }, response, assert.fail);
+
+    assert.equal(response.statusCode, 403);
+    assert.deepEqual(response.body, { error: ownershipError.message });
   });
 
   it("retorna 404 quando o registro não existe", async () => {

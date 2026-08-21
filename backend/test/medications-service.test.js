@@ -140,6 +140,53 @@ describe("medications service", () => {
     assert.equal(result.authorProfileId, "4");
   });
 
+  it("preserva o administeredAt original quando o MESMO autor edita a dose", async () => {
+    const originalAdministeredAt = new Date("2026-08-18T08:03:00Z");
+    let updatedData;
+    const service = createMedicationsService({
+      scheduleBelongsToMedication: async () => true,
+      findAdministration: async () => ({
+        id: "8", status: "taken", administeredAt: originalAdministeredAt,
+        notes: null, authorProfileId: "4", authorProfileName: "Nathan",
+      }),
+      async updateAdministration(id, data) { updatedData = data; return { id, ...data, authorProfileId: "4" }; },
+    });
+    await service.setAdministration(
+      "3", "5", { date: "2026-08-18", status: "taken", notes: "Corrigindo" }, "9", "4",
+    );
+    assert.equal(updatedData.administeredAt, originalAdministeredAt);
+  });
+
+  it("preserva o administeredAt original quando o MESMO autor muda o status para 'skipped'", async () => {
+    const originalAdministeredAt = new Date("2026-08-18T08:03:00Z");
+    let updatedData;
+    const service = createMedicationsService({
+      scheduleBelongsToMedication: async () => true,
+      findAdministration: async () => ({
+        id: "8", status: "taken", administeredAt: originalAdministeredAt,
+        notes: null, authorProfileId: "4", authorProfileName: "Nathan",
+      }),
+      async updateAdministration(id, data) { updatedData = data; return { id, ...data, authorProfileId: "4" }; },
+    });
+    await service.setAdministration(
+      "3", "5", { date: "2026-08-18", status: "skipped" }, "9", "4",
+    );
+    assert.equal(updatedData.status, "skipped");
+    assert.equal(updatedData.administeredAt, originalAdministeredAt);
+  });
+
+  it("condição de corrida seguida de reconsulta vazia gera conflito em vez de TypeError", async () => {
+    const service = createMedicationsService({
+      scheduleBelongsToMedication: async () => true,
+      findAdministration: async () => null,
+      insertAdministration: async () => null,
+    });
+    await assert.rejects(
+      service.setAdministration("3", "5", { date: "2026-08-18", status: "taken" }, "9", "7"),
+      MedicationAdministrationConflictError,
+    );
+  });
+
   it("rejeita a conclusão de OUTRO autor com MedicationAdministrationConflictError", async () => {
     const service = createMedicationsService({
       scheduleBelongsToMedication: async () => true,

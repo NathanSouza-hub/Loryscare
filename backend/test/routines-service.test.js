@@ -101,6 +101,49 @@ describe("routines service", () => {
     assert.equal(result.authorProfileId, "4");
   });
 
+  it("preserva o completedAt original quando o MESMO autor edita a atividade", async () => {
+    const originalCompletedAt = new Date("2026-08-20T09:00:00Z");
+    let updatedData;
+    const service = createRoutinesService({
+      existsOnDate: async () => true,
+      findCompletion: async () => ({
+        id: "6", status: "completed", completedAt: originalCompletedAt,
+        authorProfileId: "4", authorProfileName: "Nathan",
+      }),
+      async updateCompletion(id, data) { updatedData = data; return { id, ...data, authorProfileId: "4" }; },
+    });
+    await service.setCompletion("1", { date: "2026-08-20", status: "completed" }, "9", "4");
+    assert.equal(updatedData.completedAt, originalCompletedAt);
+  });
+
+  it("preserva o completedAt original quando o MESMO autor muda o status para 'skipped'", async () => {
+    const originalCompletedAt = new Date("2026-08-20T09:00:00Z");
+    let updatedData;
+    const service = createRoutinesService({
+      existsOnDate: async () => true,
+      findCompletion: async () => ({
+        id: "6", status: "completed", completedAt: originalCompletedAt,
+        authorProfileId: "4", authorProfileName: "Nathan",
+      }),
+      async updateCompletion(id, data) { updatedData = data; return { id, ...data, authorProfileId: "4" }; },
+    });
+    await service.setCompletion("1", { date: "2026-08-20", status: "skipped" }, "9", "4");
+    assert.equal(updatedData.status, "skipped");
+    assert.equal(updatedData.completedAt, originalCompletedAt);
+  });
+
+  it("condição de corrida seguida de reconsulta vazia gera conflito em vez de TypeError", async () => {
+    const service = createRoutinesService({
+      existsOnDate: async () => true,
+      findCompletion: async () => null,
+      insertCompletion: async () => null,
+    });
+    await assert.rejects(
+      service.setCompletion("1", { date: "2026-08-20", status: "completed" }, "9", "7"),
+      RoutineCompletionConflictError,
+    );
+  });
+
   it("rejeita a conclusão de OUTRO autor com RoutineCompletionConflictError", async () => {
     const service = createRoutinesService({
       existsOnDate: async () => true,

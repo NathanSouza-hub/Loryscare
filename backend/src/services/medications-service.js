@@ -114,7 +114,7 @@ function createMedicationsService(repository) {
         });
       }
       return repository.updateAdministration(record.id, {
-        status, administeredAt, notes: normalizedNotes,
+        status, administeredAt: record.administeredAt ?? administeredAt, notes: normalizedNotes,
       });
     }
 
@@ -124,7 +124,11 @@ function createMedicationsService(repository) {
         scheduleId, date, status, administeredAt, notes: normalizedNotes, authorProfileId,
       });
       if (inserted) return inserted;
-      return applyEdit(await repository.findAdministration(scheduleId, date));
+      const refetched = await repository.findAdministration(scheduleId, date);
+      if (!refetched) {
+        throw new MedicationAdministrationConflictError({ authorProfileName: null, administeredAt: null });
+      }
+      return applyEdit(refetched);
     }
     return applyEdit(existing);
   }

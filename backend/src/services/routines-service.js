@@ -84,14 +84,18 @@ function createRoutinesService(repository) {
           completedAt: record.completedAt,
         });
       }
-      return repository.updateCompletion(record.id, { status, completedAt });
+      return repository.updateCompletion(record.id, { status, completedAt: record.completedAt ?? completedAt });
     }
 
     const existing = await repository.findCompletion(id, date);
     if (!existing) {
       const inserted = await repository.insertCompletion({ routineId: id, date, status, completedAt, authorProfileId });
       if (inserted) return inserted;
-      return applyEdit(await repository.findCompletion(id, date));
+      const refetched = await repository.findCompletion(id, date);
+      if (!refetched) {
+        throw new RoutineCompletionConflictError({ authorProfileName: null, completedAt: null });
+      }
+      return applyEdit(refetched);
     }
     return applyEdit(existing);
   }
