@@ -1,5 +1,6 @@
 const ValidationError = require("../errors/validation-error");
 const NotFoundError = require("../errors/not-found-error");
+const VitalSignOwnershipError = require("../errors/vital-sign-ownership-error");
 
 function handleKnownError(error, response) {
   if (error instanceof ValidationError) {
@@ -9,6 +10,11 @@ function handleKnownError(error, response) {
 
   if (error instanceof NotFoundError) {
     response.status(404).json({ error: error.message });
+    return true;
+  }
+
+  if (error instanceof VitalSignOwnershipError) {
+    response.status(403).json({ error: error.message });
     return true;
   }
 
@@ -37,7 +43,7 @@ function createVitalsController(vitalsService, changeBus) {
 
   async function update(request, response, next) {
     try {
-      const vitalSigns = await vitalsService.update(request.params.id, request.body, request.userId);
+      const vitalSigns = await vitalsService.update(request.params.id, request.body, request.userId, request.profileId);
       changeBus.publish(request.userId, { resource: "vitals", action: "updated" });
       response.status(200).json({ data: vitalSigns });
     } catch (error) {

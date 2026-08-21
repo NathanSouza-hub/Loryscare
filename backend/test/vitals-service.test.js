@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const { describe, it } = require("node:test");
 const ValidationError = require("../src/errors/validation-error");
 const NotFoundError = require("../src/errors/not-found-error");
+const VitalSignOwnershipError = require("../src/errors/vital-sign-ownership-error");
 const createVitalsService = require("../src/services/vitals-service");
 
 function validInput(overrides = {}) {
@@ -163,22 +164,73 @@ describe("vitals service", () => {
   it("atualiza um registro válido", async () => {
     let receivedId;
     const service = createVitalsService({
+      findById: async () => ({ id: "12", authorProfileId: "3" }),
       async update(id, data) {
         receivedId = id;
         return { id, ...data };
       },
     });
 
-    const result = await service.update("12", validInput());
+    const result = await service.update("12", validInput(), "9", "3");
 
     assert.equal(receivedId, "12");
     assert.equal(result.systolicPressure, 120);
   });
 
   it("retorna erro quando o registro atualizado não existe", async () => {
-    const service = createVitalsService({ update: async () => null });
+    const service = createVitalsService({
+      findById: async () => null,
+      update: async () => null
+    });
 
-    await assert.rejects(service.update("999", validInput()), NotFoundError);
+    await assert.rejects(service.update("999", validInput(), "9", "3"), NotFoundError);
+  });
+
+  it("permite que o autor original edite seu próprio registro", async () => {
+    let updatedId;
+    const service = createVitalsService({
+      findById: async () => ({ id: "5", authorProfileId: "4" }),
+      async update(id) { updatedId = id; return { id }; },
+    });
+    await service.update("5", {
+      date: "2026-08-20", time: "08:00", shift: "Manhã", bloodPressure: "120/80",
+    }, "9", "4");
+    assert.equal(updatedId, "5");
+  });
+
+  it("rejeita edição de outro perfil com VitalSignOwnershipError", async () => {
+    const service = createVitalsService({
+      findById: async () => ({ id: "5", authorProfileId: "4" }),
+      update: async () => assert.fail("não deveria editar"),
+    });
+    await assert.rejects(
+      service.update("5", {
+        date: "2026-08-20", time: "08:00", shift: "Manhã", bloodPressure: "120/80",
+      }, "9", "7"),
+      VitalSignOwnershipError,
+    );
+  });
+
+  it("registro sem author_profile_id (legado) pode ser editado por qualquer perfil", async () => {
+    let updatedId;
+    const service = createVitalsService({
+      findById: async () => ({ id: "5", authorProfileId: null }),
+      async update(id) { updatedId = id; return { id }; },
+    });
+    await service.update("5", {
+      date: "2026-08-20", time: "08:00", shift: "Manhã", bloodPressure: "120/80",
+    }, "9", "7");
+    assert.equal(updatedId, "5");
+  });
+
+  it("informa quando o registro não existe", async () => {
+    const service = createVitalsService({ findById: async () => null });
+    await assert.rejects(
+      service.update("99", {
+        date: "2026-08-20", time: "08:00", shift: "Manhã", bloodPressure: "120/80",
+      }, "9", "4"),
+      NotFoundError,
+    );
   });
 
   it("remove um registro existente", async () => {

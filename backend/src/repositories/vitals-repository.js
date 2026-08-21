@@ -38,6 +38,16 @@ async function patientBelongsToUser(patientId, userId) {
   return result.rowCount > 0;
 }
 
+async function findById(id, userId) {
+  const result = await pool.query(
+    `SELECT id, author_profile_id AS "authorProfileId"
+     FROM vital_signs
+     WHERE id = $1 AND patient_id IN (SELECT id FROM patients WHERE user_id = $2)`,
+    [id, userId],
+  );
+  return result.rows[0] ?? null;
+}
+
 async function create(vitalSigns) {
   const query = `
     INSERT INTO vital_signs (
@@ -118,4 +128,4 @@ async function remove(id, userId) {
   return result.rowCount > 0;
 }
 
-module.exports = Object.freeze({ create, getAll, patientBelongsToUser, remove, update });
+module.exports = Object.freeze({ create, findById, getAll, patientBelongsToUser, remove, update });

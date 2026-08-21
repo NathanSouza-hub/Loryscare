@@ -1,5 +1,6 @@
 const ValidationError = require("../errors/validation-error");
 const NotFoundError = require("../errors/not-found-error");
+const VitalSignOwnershipError = require("../errors/vital-sign-ownership-error");
 
 const VALID_SHIFTS = new Set(["Manhã", "Tarde", "Noite", "Madrugada"]);
 
@@ -125,8 +126,13 @@ function createVitalsService(repository) {
     return repository.getAll(patientId, userId);
   }
 
-  async function update(id, input, userId) {
+  async function update(id, input, userId, profileId) {
     validateId(id);
+    const existing = await repository.findById(id, userId);
+    if (!existing) throw new NotFoundError();
+    if (existing.authorProfileId != null && String(existing.authorProfileId) !== String(profileId ?? "")) {
+      throw new VitalSignOwnershipError();
+    }
     const updatedRecord = await repository.update(id, validateAndMap(input ?? {}, true), userId);
     if (!updatedRecord) throw new NotFoundError();
     return updatedRecord;
