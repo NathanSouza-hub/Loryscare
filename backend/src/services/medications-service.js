@@ -1,5 +1,6 @@
 const MedicationNotFoundError = require("../errors/medication-not-found-error");
 const MedicationValidationError = require("../errors/medication-validation-error");
+const MedicationAdministrationConflictError = require("../errors/medication-administration-conflict-error");
 
 function isDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -100,14 +101,32 @@ function createMedicationsService(repository) {
     if (!(await repository.scheduleBelongsToMedication(medicationId, scheduleId, userId))) {
       throw new MedicationNotFoundError("Horário do medicamento não encontrado");
     }
-    return repository.setAdministration({
-      scheduleId,
-      date,
-      status,
-      administeredAt: status === "taken" ? new Date() : null,
-      notes: notes || null,
-      authorProfileId: profileId ?? null,
-    });
+
+    const administeredAt = status === "taken" ? new Date() : null;
+    const normalizedNotes = notes || null;
+    const authorProfileId = profileId ?? null;
+
+    function applyEdit(record) {
+      if (record.authorProfileId != null && String(record.authorProfileId) !== String(authorProfileId)) {
+        throw new MedicationAdministrationConflictError({
+          authorProfileName: record.authorProfileName,
+          administeredAt: record.administeredAt,
+        });
+      }
+      return repository.updateAdministration(record.id, {
+        status, administeredAt, notes: normalizedNotes,
+      });
+    }
+
+    const existing = await repository.findAdministration(scheduleId, date);
+    if (!existing) {
+      const inserted = await repository.insertAdministration({
+        scheduleId, date, status, administeredAt, notes: normalizedNotes, authorProfileId,
+      });
+      if (inserted) return inserted;
+      return applyEdit(await repository.findAdministration(scheduleId, date));
+    }
+    return applyEdit(existing);
   }
 
   return Object.freeze({ create, getAll, getDaily, remove, setAdministration, update });

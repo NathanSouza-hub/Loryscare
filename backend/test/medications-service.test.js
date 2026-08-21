@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const { describe, it } = require("node:test");
 const MedicationNotFoundError = require("../src/errors/medication-not-found-error");
 const MedicationValidationError = require("../src/errors/medication-validation-error");
+const MedicationAdministrationConflictError = require("../src/errors/medication-administration-conflict-error");
 const createMedicationsService = require("../src/services/medications-service");
 
 function validMedication(overrides = {}) {
@@ -86,31 +87,30 @@ describe("medications service", () => {
     await assert.rejects(service.getDaily("18/08/2026", "1"), MedicationValidationError);
   });
 
-  it("inclui o profileId de quem administrou a dose", async () => {
-    let received;
+  it("insere a primeira conclusão com o profileId de quem administrou", async () => {
+    let inserted;
     const service = createMedicationsService({
       scheduleBelongsToMedication: async () => true,
-      async setAdministration(data) { received = data; return { id: "1" }; },
+      findAdministration: async () => null,
+      async insertAdministration(data) { inserted = data; return { id: "1", ...data }; },
     });
     await service.setAdministration("3", "5", { date: "2026-08-18", status: "taken" }, "9", "4");
-    assert.equal(received.authorProfileId, "4");
+    assert.equal(inserted.authorProfileId, "4");
+    assert.equal(inserted.scheduleId, "5");
+    assert.ok(inserted.administeredAt instanceof Date);
   });
 
-  it("registra uma dose tomada no horário pertencente ao medicamento", async () => {
-    let received;
+  it("registra uma dose tomada com observações", async () => {
+    let inserted;
     const service = createMedicationsService({
       scheduleBelongsToMedication: async () => true,
-      async setAdministration(data) { received = data; return { id: "1" }; },
+      findAdministration: async () => null,
+      async insertAdministration(data) { inserted = data; return { id: "1", ...data }; },
     });
-
     await service.setAdministration("3", "5", {
-      date: "2026-08-18",
-      status: "taken",
-      notes: "Sem intercorrências",
+      date: "2026-08-18", status: "taken", notes: "Sem intercorrências",
     });
-
-    assert.equal(received.scheduleId, "5");
-    assert.ok(received.administeredAt instanceof Date);
+    assert.equal(inserted.notes, "Sem intercorrências");
   });
 
   it("rejeita um horário que não pertence ao medicamento", async () => {
@@ -118,6 +118,75 @@ describe("medications service", () => {
     await assert.rejects(
       service.setAdministration("3", "5", { date: "2026-08-18", status: "skipped" }),
       MedicationNotFoundError,
+    );
+  });
+
+  it("trata uma segunda chamada do MESMO autor como edição, sem trocar o autor", async () => {
+    let updatedId;
+    let updatedData;
+    const service = createMedicationsService({
+      scheduleBelongsToMedication: async () => true,
+      findAdministration: async () => ({
+        id: "8", status: "taken", administeredAt: new Date("2026-08-18T08:03:00Z"),
+        notes: null, authorProfileId: "4", authorProfileName: "Nathan",
+      }),
+      async updateAdministration(id, data) { updatedId = id; updatedData = data; return { id, ...data, authorProfileId: "4" }; },
+    });
+    const result = await service.setAdministration(
+      "3", "5", { date: "2026-08-18", status: "skipped" }, "9", "4",
+    );
+    assert.equal(updatedId, "8");
+    assert.equal(updatedData.status, "skipped");
+    assert.equal(result.authorProfileId, "4");
+  });
+
+  it("rejeita a conclusão de OUTRO autor com MedicationAdministrationConflictError", async () => {
+    const service = createMedicationsService({
+      scheduleBelongsToMedication: async () => true,
+      findAdministration: async () => ({
+        id: "8", status: "taken", administeredAt: new Date("2026-08-18T08:03:00Z"),
+        notes: null, authorProfileId: "4", authorProfileName: "Nathan",
+      }),
+      updateAdministration: async () => assert.fail("não deveria editar"),
+    });
+    await assert.rejects(
+      service.setAdministration("3", "5", { date: "2026-08-18", status: "taken" }, "9", "7"),
+      MedicationAdministrationConflictError,
+    );
+  });
+
+  it("registro sem author_profile_id (legado) pode ser editado por qualquer perfil", async () => {
+    let updatedId;
+    const service = createMedicationsService({
+      scheduleBelongsToMedication: async () => true,
+      findAdministration: async () => ({
+        id: "8", status: "taken", administeredAt: new Date("2026-08-18T08:03:00Z"),
+        notes: null, authorProfileId: null, authorProfileName: null,
+      }),
+      async updateAdministration(id) { updatedId = id; return { id, authorProfileId: null }; },
+    });
+    await service.setAdministration("3", "5", { date: "2026-08-18", status: "taken" }, "9", "7");
+    assert.equal(updatedId, "8");
+  });
+
+  it("condição de corrida: dois cuidadores concluindo juntos — o segundo recebe conflito", async () => {
+    let findCalls = 0;
+    const service = createMedicationsService({
+      scheduleBelongsToMedication: async () => true,
+      async findAdministration() {
+        findCalls += 1;
+        if (findCalls === 1) return null;
+        return {
+          id: "8", status: "taken", administeredAt: new Date("2026-08-18T08:03:00Z"),
+          notes: null, authorProfileId: "4", authorProfileName: "Nathan",
+        };
+      },
+      insertAdministration: async () => null,
+      updateAdministration: async () => assert.fail("não deveria editar"),
+    });
+    await assert.rejects(
+      service.setAdministration("3", "5", { date: "2026-08-18", status: "taken" }, "9", "7"),
+      MedicationAdministrationConflictError,
     );
   });
 });

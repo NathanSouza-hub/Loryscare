@@ -1,11 +1,18 @@
 const MedicationNotFoundError = require("../errors/medication-not-found-error");
 const MedicationValidationError = require("../errors/medication-validation-error");
+const MedicationAdministrationConflictError = require("../errors/medication-administration-conflict-error");
 
 function handle(error, response, next) {
   if (error instanceof MedicationValidationError) {
     response.status(400).json({ error: error.message, details: error.details });
   } else if (error instanceof MedicationNotFoundError) {
     response.status(404).json({ error: error.message });
+  } else if (error instanceof MedicationAdministrationConflictError) {
+    response.status(409).json({
+      error: error.message,
+      authorProfileName: error.authorProfileName,
+      administeredAt: error.administeredAt,
+    });
   } else {
     next(error);
   }

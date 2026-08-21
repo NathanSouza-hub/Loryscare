@@ -165,30 +165,52 @@ async function scheduleBelongsToMedication(medicationId, scheduleId, userId) {
   return result.rowCount > 0;
 }
 
-async function setAdministration(data) {
+async function findAdministration(scheduleId, date) {
+  const result = await pool.query(
+    `SELECT a.id, a.status, a.administered_at AS "administeredAt", a.notes,
+            a.author_profile_id AS "authorProfileId", cp.name AS "authorProfileName"
+     FROM medication_administrations a
+     LEFT JOIN caregiver_profiles cp ON cp.id = a.author_profile_id
+     WHERE a.schedule_id = $1 AND a.scheduled_date = $2`,
+    [scheduleId, date],
+  );
+  return result.rows[0] ?? null;
+}
+
+async function insertAdministration(data) {
   const result = await pool.query(
     `INSERT INTO medication_administrations
        (schedule_id, scheduled_date, status, administered_at, notes, author_profile_id)
      VALUES ($1, $2, $3, $4, $5, $6)
-     ON CONFLICT (schedule_id, scheduled_date) DO UPDATE SET
-       status = EXCLUDED.status,
-       administered_at = EXCLUDED.administered_at,
-       notes = EXCLUDED.notes,
-       author_profile_id = EXCLUDED.author_profile_id,
-       updated_at = CURRENT_TIMESTAMP
-     RETURNING id, status, administered_at AS "administeredAt", notes, author_profile_id AS "authorProfileId"`,
+     ON CONFLICT (schedule_id, scheduled_date) DO NOTHING
+     RETURNING id, status, administered_at AS "administeredAt", notes,
+       author_profile_id AS "authorProfileId"`,
     [data.scheduleId, data.date, data.status, data.administeredAt, data.notes, data.authorProfileId],
+  );
+  return result.rows[0] ?? null;
+}
+
+async function updateAdministration(id, data) {
+  const result = await pool.query(
+    `UPDATE medication_administrations
+     SET status = $1, administered_at = $2, notes = $3, updated_at = CURRENT_TIMESTAMP
+     WHERE id = $4
+     RETURNING id, status, administered_at AS "administeredAt", notes,
+       author_profile_id AS "authorProfileId"`,
+    [data.status, data.administeredAt, data.notes, id],
   );
   return result.rows[0];
 }
 
 module.exports = Object.freeze({
   create,
+  findAdministration,
   getAll,
   getDaily,
+  insertAdministration,
   patientBelongsToUser,
   remove,
   scheduleBelongsToMedication,
-  setAdministration,
   update,
+  updateAdministration,
 });
