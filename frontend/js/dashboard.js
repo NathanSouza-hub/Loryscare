@@ -85,12 +85,16 @@ function taskRow(item) {
     { iconName: "check", title: item.doneLabel, action: item.doneStatus, baseClass: "table-action--success", doneClass: "table-action--done" },
     { iconName: "x", title: item.skipLabel, action: item.skipStatus, baseClass: "table-action--danger", doneClass: "table-action--skipped" },
   ].forEach(({ iconName: buttonIcon, title: actionTitle, action, baseClass, doneClass }) => {
+    const lockedByOther = item.status !== "pending" && item.kind !== "event"
+      && item.authorProfileId != null
+      && String(item.authorProfileId) !== String(CaregiverContext.getCurrentId());
     const button = document.createElement("button");
     button.type = "button";
     button.className = `table-action table-action--icon ${baseClass}${item.status === action ? ` ${doneClass}` : ""}`;
     button.innerHTML = icon(buttonIcon);
-    button.title = actionTitle;
-    button.setAttribute("aria-label", actionTitle);
+    button.title = lockedByOther ? `Já registrado por ${item.authorName}` : actionTitle;
+    button.setAttribute("aria-label", lockedByOther ? `Já registrado por ${item.authorName}` : actionTitle);
+    button.disabled = lockedByOther;
     button.dataset.kind = item.kind;
     button.dataset.id = item.id;
     button.dataset.action = action;
@@ -171,6 +175,7 @@ async function loadTasks() {
       status: activity.status,
       isFixed: activity.isFixed,
       authorName: activity.authorProfileName,
+      authorProfileId: activity.authorProfileId,
       doneLabel: "Concluir",
       doneStatus: "completed",
       skipLabel: "Não realizada",
@@ -185,6 +190,7 @@ async function loadTasks() {
       subtitle: `Medicamento · ${dose.dosage}`,
       status: dose.status,
       authorName: dose.authorProfileName,
+      authorProfileId: dose.authorProfileId,
       doneLabel: "Administrado",
       doneStatus: "taken",
       skipLabel: "Ignorado",
@@ -294,6 +300,7 @@ todayList.addEventListener("click", async (event) => {
     await loadTasks();
   } catch (error) {
     message.textContent = error.message;
+    await loadTasks();
   }
 });
 
