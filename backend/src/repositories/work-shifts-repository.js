@@ -32,7 +32,7 @@ async function createExclusive(shift) {
     }
     const result = await client.query(
       `INSERT INTO work_shifts (user_id, profile_id, started_at, duration_hours, expected_end_at)
-       VALUES ($1, $2, $3::timestamp, $4, $3::timestamp + ($4 || ' hours')::interval)
+       VALUES ($1, $2, $3::timestamp, $4::smallint, $3::timestamp + ($4::text || ' hours')::interval)
        RETURNING ${SHIFT_FIELDS}`,
       [shift.userId, shift.profileId, shift.startedAt, shift.durationHours],
     );
