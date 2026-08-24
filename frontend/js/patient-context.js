@@ -1,6 +1,6 @@
 const PatientContext = (() => {
   const STORAGE_KEY = "loreroutine:patientId";
-  const API_URL = "http://localhost:3000/api/patients";
+  const API_URL = `${API_BASE_URL}/api/patients`;
 
   function getCurrentId() {
     return localStorage.getItem(STORAGE_KEY) || null;

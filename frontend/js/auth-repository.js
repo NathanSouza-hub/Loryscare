@@ -1,5 +1,5 @@
 const AuthRepository = (() => {
-  const API_URL = "http://localhost:3000/api/auth";
+  const API_URL = `${API_BASE_URL}/api/auth`;
 
   const hasAuthContext = typeof AuthContext !== "undefined";
 

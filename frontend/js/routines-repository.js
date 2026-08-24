@@ -1,5 +1,5 @@
 const RoutinesRepository = (() => {
-  const API_URL = "http://localhost:3000/api/routines";
+  const API_URL = `${API_BASE_URL}/api/routines`;
   async function request(url, options = {}) {
     const response = await fetch(url, {
       ...options,

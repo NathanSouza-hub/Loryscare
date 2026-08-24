@@ -1,5 +1,5 @@
 const WorkShiftsRepository = (() => {
-  const API_URL = "http://localhost:3000/api/work-shifts";
+  const API_URL = `${API_BASE_URL}/api/work-shifts`;
   async function request(url, options = {}) {
     const response = await fetch(url, {
       ...options,

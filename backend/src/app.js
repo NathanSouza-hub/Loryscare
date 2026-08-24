@@ -44,7 +44,7 @@ const createChangeBus = require("./realtime/change-bus");
 const app = express();
 const changeBus = createChangeBus();
 
-app.use(cors());
+app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
 app.use(express.json({ limit: "2mb" }));
 
 const authService = createAuthService(usersRepository);

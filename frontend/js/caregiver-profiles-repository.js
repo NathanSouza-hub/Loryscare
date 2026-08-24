@@ -1,5 +1,5 @@
 const CaregiverProfilesRepository = (() => {
-  const API_URL = "http://localhost:3000/api/caregiver-profiles";
+  const API_URL = `${API_BASE_URL}/api/caregiver-profiles`;
 
   async function request(url, options = {}) {
     const response = await fetch(url, {

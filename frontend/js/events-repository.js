@@ -1,5 +1,5 @@
 const EventsRepository = (() => {
-  const API_URL = "http://localhost:3000/api/events";
+  const API_URL = `${API_BASE_URL}/api/events`;
   async function request(url, options = {}) {
     const response = await fetch(url, {
       ...options,

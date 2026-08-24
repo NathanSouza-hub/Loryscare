@@ -1,5 +1,5 @@
 const MedicationsRepository = (() => {
-  const API_URL = "http://localhost:3000/api/medications";
+  const API_URL = `${API_BASE_URL}/api/medications`;
 
   async function request(url, options = {}) {
     const response = await fetch(url, {

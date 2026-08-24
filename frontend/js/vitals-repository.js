@@ -1,5 +1,5 @@
 const VitalsRepository = (() => {
-  const API_URL = "http://localhost:3000/api/vitals";
+  const API_URL = `${API_BASE_URL}/api/vitals`;
 
   function toLocalRecord(record) {
     const measuredAt = new Date(record.measuredAt);
