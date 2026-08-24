@@ -30,6 +30,29 @@ describe("events service", () => {
     assert.equal(received.authorProfileId, "4");
   });
 
+  it("cadastra um compromisso recorrente nos dias selecionados", async () => {
+    let received;
+    const service = createEventsService({
+      patientBelongsToUser: async () => true,
+      async createMany(items) { received = items; return ["10", "11", "12"]; },
+    });
+    const result = await service.create(validEvent({
+      eventDate: "2026-08-24",
+      repeatWeekly: true,
+      repeatWeekdays: [1, 3, 5],
+      repeatUntil: "2026-08-30",
+    }), "9", "4");
+    assert.deepEqual(received.map((item) => item.eventDate), ["2026-08-24", "2026-08-26", "2026-08-28"]);
+    assert.deepEqual(result, { ids: ["10", "11", "12"], count: 3 });
+  });
+
+  it("rejeita recorrência sem dias da semana", async () => {
+    const service = createEventsService({ patientBelongsToUser: async () => true });
+    await assert.rejects(service.create(validEvent({
+      repeatWeekly: true, repeatWeekdays: [], repeatUntil: "2026-09-25",
+    }), "9"), EventValidationError);
+  });
+
   it("inclui o profileId de quem marcou o status", async () => {
     let receivedProfileId;
     const service = createEventsService({

@@ -1,6 +1,7 @@
 const NursingNoteNotFoundError = require("../errors/nursing-note-not-found-error");
 const NursingNoteValidationError = require("../errors/nursing-note-validation-error");
 const NursingNoteOwnershipError = require("../errors/nursing-note-ownership-error");
+const NursingNoteShiftConflictError = require("../errors/nursing-note-shift-conflict-error");
 
 const VALID_SHIFTS = new Set(["Manhã", "Tarde", "Noite", "Madrugada"]);
 
@@ -35,12 +36,23 @@ function validateNote(input, editing = false) {
   return { noteDate, noteTime, shift, noteText, patientId, isHighlighted: Boolean(input.isHighlighted) };
 }
 
-function createNursingNotesService(repository) {
+function createNursingNotesService(repository, workShiftsRepository) {
+  async function checkShift(note, userId, profileId) {
+    if (!profileId || !workShiftsRepository) return;
+    const eventAt = `${note.noteDate} ${note.noteTime}:00`;
+    const covering = await workShiftsRepository.findCovering(userId, eventAt);
+    if (covering && String(covering.profileId) !== String(profileId)) {
+      throw new NursingNoteShiftConflictError(
+        `Este horário pertence ao plantão de ${covering.profileName} (${covering.startedTime}–${covering.endTime})`,
+      );
+    }
+  }
   async function create(input, userId, profileId) {
     const note = { ...validateNote(input ?? {}), authorName: null, authorProfileId: profileId ?? null };
     if (!(await repository.patientBelongsToUser(note.patientId, userId))) {
       throw new NursingNoteValidationError({ patientId: "Paciente não encontrado" });
     }
+    await checkShift(note, userId, profileId);
     return { id: await repository.create(note) };
   }
   async function getAll(patientId, userId, { date, shift } = {}) {
@@ -56,7 +68,9 @@ function createNursingNotesService(repository) {
     if (existing.authorProfileId != null && String(existing.authorProfileId) !== String(profileId ?? "")) {
       throw new NursingNoteOwnershipError();
     }
-    if (!(await repository.update(id, validateNote(input ?? {}, true), userId))) throw new NursingNoteNotFoundError();
+    const note = validateNote(input ?? {}, true);
+    await checkShift(note, userId, profileId);
+    if (!(await repository.update(id, note, userId))) throw new NursingNoteNotFoundError();
   }
   async function remove(id, userId) {
     validateId(id);

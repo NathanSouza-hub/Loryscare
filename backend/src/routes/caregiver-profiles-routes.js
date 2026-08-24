@@ -6,6 +6,8 @@ function createCaregiverProfilesRouter(controller) {
   router.post("/", controller.create);
   router.put("/:id", controller.update);
   router.delete("/:id", controller.remove);
+  router.post("/:id/set-pin", controller.setPin);
+  router.post("/:id/verify-pin", controller.verifyPin);
   return router;
 }
 

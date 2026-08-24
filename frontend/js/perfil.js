@@ -160,6 +160,8 @@ const caregiverMessage = document.querySelector("#caregiver-message");
 const caregiverSubmit = document.querySelector("#caregiver-submit");
 const caregiverCancel = document.querySelector("#caregiver-cancel");
 const caregiverColorInput = document.querySelector("#caregiver-color");
+const caregiverPinInput = document.querySelector("#caregiver-pin");
+const caregiverPinLabel = document.querySelector("#caregiver-pin-label");
 const colorPicker = document.querySelector("#color-picker");
 const caregiversBody = document.querySelector("#caregivers-body");
 const caregiversWrapper = document.querySelector("#caregivers-wrapper");
@@ -200,6 +202,8 @@ function renderCaregivers() {
       editingCaregiverId = String(item.id);
       caregiverForm.elements.name.value = item.name;
       caregiverColorInput.value = item.avatarColor;
+      caregiverPinInput.value = "";
+      caregiverPinLabel.textContent = "Novo PIN (opcional)";
       colorPicker.querySelectorAll(".profile-color-picker__swatch").forEach((el) => {
         el.classList.toggle("profile-color-picker__swatch--selected", el.dataset.color === item.avatarColor);
       });
@@ -231,6 +235,7 @@ function finishCaregiverEditing(text = "") {
   editingCaregiverId = null;
   caregiverForm.reset();
   caregiverColorInput.value = "";
+  caregiverPinLabel.textContent = "PIN (opcional, 4 dígitos)";
   colorPicker.querySelectorAll(".profile-color-picker__swatch").forEach((el) => el.classList.remove("profile-color-picker__swatch--selected"));
   caregiverCancel.hidden = true;
   caregiverSubmit.textContent = "Adicionar cuidador";
@@ -240,6 +245,10 @@ function finishCaregiverEditing(text = "") {
 caregiverForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!caregiverColorInput.value) { caregiverMessage.textContent = "Escolha uma cor de avatar."; return; }
+  if (caregiverPinInput.value && !/^\d{4}$/.test(caregiverPinInput.value)) {
+    caregiverMessage.textContent = "O PIN deve ter exatamente 4 dígitos.";
+    return;
+  }
   caregiverSubmit.disabled = true;
   caregiverMessage.textContent = "Salvando...";
   try {

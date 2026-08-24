@@ -19,6 +19,8 @@ const CaregiverProfilesRepository = (() => {
   async function create(data) { return (await request(API_URL, { method: "POST", body: JSON.stringify(data) })).data; }
   async function update(id, data) { return (await request(`${API_URL}/${id}`, { method: "PUT", body: JSON.stringify(data) })).data; }
   async function remove(id) { return request(`${API_URL}/${id}`, { method: "DELETE" }); }
+  async function setPin(id, pin) { return (await request(`${API_URL}/${id}/set-pin`, { method: "POST", body: JSON.stringify({ pin }) })).data; }
+  async function verifyPin(id, pin) { return (await request(`${API_URL}/${id}/verify-pin`, { method: "POST", body: JSON.stringify({ pin }) })).data; }
 
-  return Object.freeze({ create, getAll, remove, update });
+  return Object.freeze({ create, getAll, remove, setPin, update, verifyPin });
 })();

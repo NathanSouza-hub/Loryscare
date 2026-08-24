@@ -16,3 +16,7 @@ Thumbs.db
 # Configurações locais de editores
 .vscode/
 .idea/
+
+# Configuração pessoal do Claude Code
+.claude/settings.local.json
+.claude/worktrees/

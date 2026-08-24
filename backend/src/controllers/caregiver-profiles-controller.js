@@ -28,6 +28,14 @@ function createCaregiverProfilesController(service, changeBus) {
       changeBus.publish(request.userId, { resource: "caregiver-profiles", action: "removed" });
       response.status(204).send();
     }),
+    setPin: action(async (request, response) => {
+      const data = await service.setPin(request.params.id, request.body.pin, request.userId);
+      response.status(200).json({ data });
+    }),
+    verifyPin: action(async (request, response) => {
+      await service.verifyPin(request.params.id, request.body.pin, request.userId);
+      response.status(200).json({ data: true });
+    }),
   });
 }
 

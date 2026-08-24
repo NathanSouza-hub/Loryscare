@@ -33,6 +33,10 @@ const createCaregiverProfilesController = require("./controllers/caregiver-profi
 const caregiverProfilesRepository = require("./repositories/caregiver-profiles-repository");
 const createCaregiverProfilesRouter = require("./routes/caregiver-profiles-routes");
 const createCaregiverProfilesService = require("./services/caregiver-profiles-service");
+const createWorkShiftsController = require("./controllers/work-shifts-controller");
+const workShiftsRepository = require("./repositories/work-shifts-repository");
+const createWorkShiftsRouter = require("./routes/work-shifts-routes");
+const createWorkShiftsService = require("./services/work-shifts-service");
 const createRequireAuth = require("./middleware/require-auth");
 const createAttachProfile = require("./middleware/attach-profile");
 const createChangeBus = require("./realtime/change-bus");
@@ -70,13 +74,17 @@ const eventsService = createEventsService(eventsRepository);
 const eventsController = createEventsController(eventsService, changeBus);
 app.use("/api/events", requireAuth, attachProfile, createEventsRouter(eventsController));
 
-const nursingNotesService = createNursingNotesService(nursingNotesRepository);
+const nursingNotesService = createNursingNotesService(nursingNotesRepository, workShiftsRepository);
 const nursingNotesController = createNursingNotesController(nursingNotesService, changeBus);
 app.use("/api/nursing-notes", requireAuth, attachProfile, createNursingNotesRouter(nursingNotesController));
 
 const caregiverProfilesService = createCaregiverProfilesService(caregiverProfilesRepository);
 const caregiverProfilesController = createCaregiverProfilesController(caregiverProfilesService, changeBus);
 app.use("/api/caregiver-profiles", requireAuth, createCaregiverProfilesRouter(caregiverProfilesController));
+
+const workShiftsService = createWorkShiftsService(workShiftsRepository);
+const workShiftsController = createWorkShiftsController(workShiftsService);
+app.use("/api/work-shifts", requireAuth, attachProfile, createWorkShiftsRouter(workShiftsController));
 
 app.get("/api/stream", (request, response) => {
   let userId;

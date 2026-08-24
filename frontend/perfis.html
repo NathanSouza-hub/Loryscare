@@ -8,20 +8,72 @@
     <link rel="stylesheet" href="css/styles.css" />
   </head>
   <body>
-    <div class="profile-picker">
+    <div class="profile-picker" id="profile-step">
       <div>
         <a class="brand" href="index.html"><span class="brand__icon"></span>Lory's<span> Care</span></a>
         <h1>Quem está cuidando agora?</h1>
       </div>
       <div class="profile-grid" id="profile-grid"></div>
+      <button class="secondary-button" id="start-shift-button" type="button">Iniciar um plantão</button>
       <p class="empty-history" id="empty-profiles" hidden>Nenhum cuidador cadastrado ainda. Peça para o responsável da conta cadastrar em "Meu perfil".</p>
       <p class="form-message" id="message" aria-live="polite"></p>
     </div>
 
+    <div class="profile-picker" id="pin-step" hidden>
+      <div>
+        <a class="brand" href="index.html"><span class="brand__icon"></span>Lory's<span> Care</span></a>
+        <h1 id="pin-step-title">Digite o PIN</h1>
+        <p id="pin-step-description"></p>
+      </div>
+      <section class="form-panel" style="max-width: 360px; width: 100%;">
+        <form id="pin-form">
+          <div class="form-grid">
+            <div class="form-field"><label for="pin-input" id="pin-input-label">PIN</label><input id="pin-input" name="pin" inputmode="numeric" pattern="\d{4}" maxlength="4" autocomplete="off" required /></div>
+            <div class="form-field" id="pin-confirm-field" hidden><label for="pin-confirm-input">Confirme o PIN</label><input id="pin-confirm-input" name="pinConfirm" inputmode="numeric" pattern="\d{4}" maxlength="4" autocomplete="off" /></div>
+          </div>
+          <div class="form-actions">
+            <button class="primary-button" type="submit" id="pin-submit-button">Confirmar</button>
+            <button class="secondary-button" type="button" id="pin-cancel-button">Voltar</button>
+            <p class="form-message" id="pin-message" aria-live="polite"></p>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div class="profile-picker" id="shift-step" hidden>
+      <div>
+        <a class="brand" href="index.html"><span class="brand__icon"></span>Lory's<span> Care</span></a>
+        <h1 id="shift-step-title">Iniciar plantão?</h1>
+        <p>Ninguém está de plantão agora. Se você está começando a cuidar, registre o início — isso garante que só você possa lançar anotações no seu horário.</p>
+      </div>
+      <section class="form-panel" style="max-width: 360px; width: 100%;">
+        <form id="shift-form">
+          <div class="form-grid">
+            <div class="form-field form-field--full"><label for="shift-profile">Cuidador</label><select id="shift-profile" name="profileId" required><option value="">Selecione</option></select></div>
+            <div class="form-field"><label for="shift-date">Início</label><input id="shift-date" name="startedDate" type="date" required /></div>
+            <div class="form-field"><label for="shift-time">Hora</label><input id="shift-time" name="startedTime" type="time" required /></div>
+            <div class="form-field form-field--full">
+              <label for="shift-duration">Duração</label>
+              <select id="shift-duration" name="durationHours" required>
+                <option value="12">12 horas</option>
+                <option value="24">24 horas</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="primary-button" type="submit">Iniciar plantão</button>
+            <button class="secondary-button" type="button" id="skip-shift-button">Agora não</button>
+            <p class="form-message" id="shift-message" aria-live="polite"></p>
+          </div>
+        </form>
+      </section>
+    </div>
+
     <script src="js/icons.js"></script>
     <script src="js/auth-context.js"></script>
-    <script src="js/caregiver-profiles-repository.js"></script>
+    <script src="js/caregiver-profiles-repository.js?v=20260824-1"></script>
     <script src="js/caregiver-context.js"></script>
-    <script src="js/perfis.js"></script>
+    <script src="js/work-shifts-repository.js?v=20260821-1"></script>
+    <script src="js/perfis.js?v=20260824-1"></script>
   </body>
 </html>

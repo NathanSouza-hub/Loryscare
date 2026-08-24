@@ -12,6 +12,9 @@ const dailyDateLabel = document.querySelector("#daily-date-label");
 const dailyBody = document.querySelector("#daily-body");
 const dailyWrapper = document.querySelector("#daily-wrapper");
 const emptyDaily = document.querySelector("#empty-daily");
+const repeatWeekly = document.querySelector("#repeat-weekly");
+const recurrenceFields = document.querySelector("#recurrence-fields");
+const repeatUntil = document.querySelector("#repeat-until");
 
 const WEEKDAY_ORDER = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -33,7 +36,14 @@ function dateKey(year, month, day) { return `${year}-${pad(month + 1)}-${pad(day
 
 function formData() {
   const data = Object.fromEntries(new FormData(form).entries());
+  data.repeatWeekly = repeatWeekly.checked;
+  data.repeatWeekdays = [...form.querySelectorAll('[name="repeatWeekdays"]:checked')].map((input) => Number(input.value));
   return { ...data, patientId };
+}
+
+function updateRecurrenceFields() {
+  recurrenceFields.hidden = !repeatWeekly.checked;
+  repeatUntil.required = repeatWeekly.checked;
 }
 
 function cell(value) { const element = document.createElement("td"); element.textContent = value || "—"; return element; }
@@ -122,6 +132,8 @@ function hideForm() { eventFormPanel.hidden = true; }
 
 function finishEditing(text = "") {
   editingId = null; form.reset(); form.elements.eventDate.value = selectedDate;
+  repeatWeekly.disabled = false;
+  updateRecurrenceFields();
   submitButton.textContent = "Cadastrar evento"; message.textContent = text;
 }
 
@@ -129,14 +141,17 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault(); submitButton.disabled = true; message.textContent = "Salvando...";
   try {
     const wasEditing = Boolean(editingId);
-    if (wasEditing) await EventsRepository.update(editingId, formData()); else await EventsRepository.create(formData());
-    finishEditing(wasEditing ? "Evento atualizado." : "Evento cadastrado.");
+    let result;
+    if (wasEditing) await EventsRepository.update(editingId, formData()); else result = await EventsRepository.create(formData());
+    const count = result?.data?.count;
+    finishEditing(wasEditing ? "Evento atualizado." : count ? `${count} eventos cadastrados.` : "Evento cadastrado.");
     hideForm();
     await loadMonth();
   } catch (error) { message.textContent = error.message; } finally { submitButton.disabled = false; }
 });
 
 cancelButton.addEventListener("click", () => { finishEditing(); hideForm(); });
+repeatWeekly.addEventListener("change", updateRecurrenceFields);
 
 newEventButton.addEventListener("click", () => {
   finishEditing();
@@ -163,6 +178,9 @@ dailyBody.addEventListener("click", async (event) => {
     form.elements.eventDate.value = item.eventDate;
     form.elements.eventTime.value = item.eventTime;
     form.elements.notes.value = item.notes || "";
+    repeatWeekly.checked = false;
+    repeatWeekly.disabled = true;
+    updateRecurrenceFields();
     submitButton.textContent = "Salvar alterações";
     showForm();
     return;

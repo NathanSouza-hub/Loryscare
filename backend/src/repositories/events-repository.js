@@ -32,6 +32,29 @@ async function create(event) {
   return result.rows[0].id;
 }
 
+async function createMany(events) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const ids = [];
+    for (const event of events) {
+      const result = await client.query(
+        `INSERT INTO events (title, category, event_date, event_time, notes, patient_id, author_profile_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+        [event.title, event.category, event.eventDate, event.eventTime, event.notes, event.patientId, event.authorProfileId],
+      );
+      ids.push(result.rows[0].id);
+    }
+    await client.query("COMMIT");
+    return ids;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function update(id, event, userId) {
   const result = await pool.query(
     `UPDATE events SET title = $1, category = $2, event_date = $3, event_time = $4, notes = $5,
@@ -89,5 +112,5 @@ async function setStatus(id, status, userId, profileId) {
 }
 
 module.exports = Object.freeze({
-  create, getAll, getDaily, getUpcoming, patientBelongsToUser, remove, setStatus, update,
+  create, createMany, getAll, getDaily, getUpcoming, patientBelongsToUser, remove, setStatus, update,
 });

@@ -74,6 +74,18 @@
         location.href = "perfis.html";
       });
       roleEl.append(document.createTextNode(" · "), switchLink);
+
+      if (typeof WorkShiftsRepository !== "undefined") {
+        WorkShiftsRepository.getCurrent().then((current) => {
+          if (!current || String(current.profileId) !== String(CaregiverContext.getCurrentId())) return;
+          const [hour, minute] = current.expectedEndTime.split(":");
+          const endLabel = minute === "00" ? `${hour}h` : `${hour}h${minute}`;
+          const shiftLabel = document.createElement("span");
+          shiftLabel.className = "sidebar-user-card__shift";
+          shiftLabel.textContent = ` · Plantão até ${endLabel}`;
+          roleEl.append(shiftLabel);
+        }).catch(() => {});
+      }
     }
   }
 })();

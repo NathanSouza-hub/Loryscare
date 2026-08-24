@@ -34,17 +34,44 @@ function validateEvent(input, editing = false) {
   return { title, category: category || null, eventDate, eventTime, notes: notes || null, patientId };
 }
 
+function recurringDates(start, end, weekdays) {
+  const dates = [];
+  const cursor = new Date(`${start}T00:00:00Z`);
+  const last = new Date(`${end}T00:00:00Z`);
+  while (cursor <= last) {
+    if (weekdays.has(cursor.getUTCDay())) dates.push(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return dates;
+}
+
 function createEventsService(repository) {
   async function getAll(patientId, userId, range) {
     validateId(patientId, "patientId");
     return repository.getAll(patientId, userId, range);
   }
   async function create(input, userId, profileId) {
-    const event = { ...validateEvent(input ?? {}), authorProfileId: profileId ?? null };
+    const source = input ?? {};
+    const event = { ...validateEvent(source), authorProfileId: profileId ?? null };
     if (!(await repository.patientBelongsToUser(event.patientId, userId))) {
       throw new EventValidationError({ patientId: "Paciente não encontrado" });
     }
-    return { id: await repository.create(event) };
+    if (!source.repeatWeekly) return { id: await repository.create(event) };
+
+    const repeatUntil = typeof source.repeatUntil === "string" ? source.repeatUntil : "";
+    const weekdays = new Set(Array.isArray(source.repeatWeekdays) ? source.repeatWeekdays.map(Number) : []);
+    const maxDate = new Date(`${event.eventDate}T00:00:00Z`);
+    maxDate.setUTCFullYear(maxDate.getUTCFullYear() + 1);
+    if (!isDate(repeatUntil) || repeatUntil < event.eventDate || new Date(`${repeatUntil}T00:00:00Z`) > maxDate) {
+      throw new EventValidationError({ repeatUntil: "Informe uma data final entre a data inicial e um ano" });
+    }
+    if (!weekdays.size || [...weekdays].some((day) => !Number.isInteger(day) || day < 0 || day > 6)) {
+      throw new EventValidationError({ repeatWeekdays: "Selecione pelo menos um dia da semana" });
+    }
+    const dates = recurringDates(event.eventDate, repeatUntil, weekdays);
+    if (!dates.length) throw new EventValidationError({ repeatWeekdays: "Nenhuma ocorrência encontrada no período" });
+    const ids = await repository.createMany(dates.map((eventDate) => ({ ...event, eventDate })));
+    return { ids, count: ids.length };
   }
   async function update(id, input, userId) {
     validateId(id);

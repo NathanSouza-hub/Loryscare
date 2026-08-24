@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Agenda de eventos no Lory's Care." />
     <title>Agenda | Lory's Care</title>
-    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/styles.css?v=20260821-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -63,8 +63,22 @@
                 <div class="form-grid">
                   <div class="form-field form-field--full"><label for="title">Título</label><input id="title" name="title" maxlength="120" placeholder="Ex.: Consulta com cardiologista" required /></div>
                   <div class="form-field"><label for="category">Categoria</label><select id="category" name="category"><option value="">Selecione</option><option>Consulta médica</option><option>Exame</option><option>Aniversário</option><option>Visita</option><option>Outro</option></select></div>
-                  <div class="form-field"><label for="event-date">Data</label><input id="event-date" name="eventDate" type="date" required /></div>
+                  <div class="form-field"><label for="event-date">Data inicial</label><input id="event-date" name="eventDate" type="date" required /></div>
                   <div class="form-field"><label for="event-time">Horário</label><input id="event-time" name="eventTime" type="time" required /></div>
+                  <div class="form-field form-field--full"><label><input id="repeat-weekly" name="repeatWeekly" type="checkbox" /> Repetir semanalmente</label></div>
+                  <div class="form-field form-field--full" id="recurrence-fields" hidden>
+                    <label>Dias da semana</label>
+                    <div class="weekday-options">
+                      <label><input name="repeatWeekdays" type="checkbox" value="0" /> Dom</label>
+                      <label><input name="repeatWeekdays" type="checkbox" value="1" /> Seg</label>
+                      <label><input name="repeatWeekdays" type="checkbox" value="2" /> Ter</label>
+                      <label><input name="repeatWeekdays" type="checkbox" value="3" /> Qua</label>
+                      <label><input name="repeatWeekdays" type="checkbox" value="4" /> Qui</label>
+                      <label><input name="repeatWeekdays" type="checkbox" value="5" /> Sex</label>
+                      <label><input name="repeatWeekdays" type="checkbox" value="6" /> Sáb</label>
+                    </div>
+                    <label for="repeat-until">Repetir até</label><input id="repeat-until" name="repeatUntil" type="date" />
+                  </div>
                   <div class="form-field form-field--full"><label for="notes">Observações</label><textarea id="notes" name="notes" maxlength="500" placeholder="Inclua orientações importantes"></textarea></div>
                 </div>
                 <div class="form-actions"><button class="primary-button" id="submit-button" type="submit">Cadastrar evento</button><button class="secondary-button" id="cancel-button" type="button">Cancelar</button><p class="form-message" id="form-message" aria-live="polite"></p></div>
@@ -90,15 +104,16 @@
       </div>
     </div>
     <script src="js/auth-context.js"></script>
-    <script src="js/caregiver-profiles-repository.js"></script>
+    <script src="js/caregiver-profiles-repository.js?v=20260824-1"></script>
     <script src="js/caregiver-context.js"></script>
     <script src="js/icons.js"></script>
-    <script src="js/ui-icons.js"></script>
+    <script src="js/work-shifts-repository.js?v=20260821-1"></script>
+    <script src="js/ui-icons.js?v=20260821-1"></script>
     <script src="js/account-menu.js"></script>
     <script src="js/sidebar-toggle.js"></script>
     <script src="js/patient-context.js"></script>
     <script src="js/live-updates.js"></script>
     <script src="js/events-repository.js"></script>
-    <script src="js/agenda.js"></script>
+    <script src="js/agenda.js?v=20260821-1"></script>
   </body>
 </html>

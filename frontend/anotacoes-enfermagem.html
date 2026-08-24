@@ -56,21 +56,10 @@
 
           <section class="form-panel" id="tab-nova" aria-labelledby="form-title">
             <h2 id="form-title">Nova anotação</h2>
-            <p class="form-hint" id="plantao-hint" hidden></p>
             <form id="note-form">
               <div class="form-grid">
                 <div class="form-field" id="note-date-field"><label for="note-date">Data</label><input id="note-date" name="noteDate" type="date" required /></div>
                 <div class="form-field"><label for="note-time">Horário</label><input id="note-time" name="noteTime" type="time" required /></div>
-                <div class="form-field" id="note-shift-field">
-                  <label for="shift">Plantão/turno</label>
-                  <select id="shift" name="shift" required>
-                    <option value="">Selecione</option>
-                    <option value="Manhã">Manhã</option>
-                    <option value="Tarde">Tarde</option>
-                    <option value="Noite">Noite</option>
-                    <option value="Madrugada">Madrugada</option>
-                  </select>
-                </div>
                 <div class="form-field form-field--full"><label for="note-text">Evolução</label><textarea id="note-text" name="noteText" maxlength="2000" placeholder="Descreva a evolução do plantão" required></textarea></div>
               </div>
               <div class="form-actions"><button class="primary-button" id="submit-button" type="submit">Registrar anotação</button><button class="secondary-button" id="cancel-button" type="button" hidden>Cancelar edição</button><p class="form-message" id="form-message" aria-live="polite"></p></div>
@@ -108,15 +97,16 @@
       </div>
     </div>
     <script src="js/auth-context.js"></script>
-    <script src="js/caregiver-profiles-repository.js"></script>
+    <script src="js/caregiver-profiles-repository.js?v=20260824-1"></script>
     <script src="js/caregiver-context.js"></script>
     <script src="js/icons.js"></script>
-    <script src="js/ui-icons.js"></script>
+    <script src="js/work-shifts-repository.js?v=20260821-1"></script>
+    <script src="js/ui-icons.js?v=20260821-1"></script>
     <script src="js/account-menu.js"></script>
     <script src="js/sidebar-toggle.js"></script>
     <script src="js/patient-context.js"></script>
     <script src="js/live-updates.js"></script>
     <script src="js/nursing-notes-repository.js"></script>
-    <script src="js/nursing-notes.js"></script>
+    <script src="js/nursing-notes.js?v=20260821-2"></script>
   </body>
 </html>

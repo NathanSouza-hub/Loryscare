@@ -3,6 +3,7 @@ const { describe, it } = require("node:test");
 const NursingNoteNotFoundError = require("../src/errors/nursing-note-not-found-error");
 const NursingNoteValidationError = require("../src/errors/nursing-note-validation-error");
 const NursingNoteOwnershipError = require("../src/errors/nursing-note-ownership-error");
+const NursingNoteShiftConflictError = require("../src/errors/nursing-note-shift-conflict-error");
 const createNursingNotesService = require("../src/services/nursing-notes-service");
 
 function validNote(overrides = {}) {
@@ -134,6 +135,55 @@ describe("nursing notes service", () => {
         noteDate: "2026-08-20", noteTime: "22:00", shift: "Noite", noteText: "Texto",
       }, "9", "4"),
       NursingNoteNotFoundError,
+    );
+  });
+
+  it("permite cadastro quando nenhum plantão cobre o horário", async () => {
+    let received;
+    const service = createNursingNotesService(
+      { patientBelongsToUser: async () => true, async create(data) { received = data; return "4"; } },
+      { findCovering: async () => null },
+    );
+    await service.create(validNote(), "9", "4");
+    assert.equal(received.authorProfileId, "4");
+  });
+
+  it("permite cadastro quando o plantão que cobre o horário é do próprio perfil", async () => {
+    const service = createNursingNotesService(
+      { patientBelongsToUser: async () => true, create: async () => "4" },
+      { findCovering: async () => ({ profileId: "4", profileName: "Eric", startedTime: "07:00", endTime: "19:00" }) },
+    );
+    await service.create(validNote(), "9", "4");
+  });
+
+  it("rejeita cadastro quando o horário pertence ao plantão de outro cuidador", async () => {
+    const service = createNursingNotesService(
+      { patientBelongsToUser: async () => true, create: async () => assert.fail() },
+      { findCovering: async () => ({ profileId: "7", profileName: "Eric", startedTime: "07:00", endTime: "19:00" }) },
+    );
+    await assert.rejects(service.create(validNote(), "9", "4"), NursingNoteShiftConflictError);
+  });
+
+  it("não checa plantão quando não há perfil selecionado", async () => {
+    let checked = false;
+    const service = createNursingNotesService(
+      { patientBelongsToUser: async () => true, create: async () => "4" },
+      { findCovering: async () => { checked = true; return { profileId: "7", profileName: "Eric", startedTime: "07:00", endTime: "19:00" }; } },
+    );
+    await service.create(validNote(), "9", null);
+    assert.equal(checked, false);
+  });
+
+  it("rejeita edição quando a nova data/hora cai no plantão de outro cuidador", async () => {
+    const service = createNursingNotesService(
+      { findById: async () => ({ id: "5", authorProfileId: "4" }), update: async () => assert.fail() },
+      { findCovering: async () => ({ profileId: "7", profileName: "Eric", startedTime: "07:00", endTime: "19:00" }) },
+    );
+    await assert.rejects(
+      service.update("5", {
+        noteDate: "2026-08-20", noteTime: "08:00", shift: "Manhã", noteText: "Texto",
+      }, "9", "4"),
+      NursingNoteShiftConflictError,
     );
   });
 });
