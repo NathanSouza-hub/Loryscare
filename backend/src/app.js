@@ -1,3 +1,4 @@
+const path = require("path");
 const cors = require("cors");
 const express = require("express");
 const pool = require("./config/database");
@@ -46,6 +47,7 @@ const changeBus = createChangeBus();
 
 app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
 app.use(express.json({ limit: "2mb" }));
+app.use(express.static(path.join(__dirname, "../../frontend")));
 
 const authService = createAuthService(usersRepository);
 const authController = createAuthController(authService);
