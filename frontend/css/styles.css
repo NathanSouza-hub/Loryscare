@@ -1592,6 +1592,14 @@ tbody tr:last-child td {
     padding: 16px 14px;
   }
 
+  .app-shell--sidebar-collapsed .sidebar {
+    width: 100%;
+  }
+
+  .sidebar-toggle-button {
+    display: none;
+  }
+
   .sidebar__tagline,
   .patient-switcher,
   .sidebar-user-card__info,
