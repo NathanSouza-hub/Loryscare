@@ -30,6 +30,26 @@ describe("events service", () => {
     assert.equal(received.authorProfileId, "4");
   });
 
+  it("marca o evento como importante por padrão", async () => {
+    let received;
+    const service = createEventsService({
+      patientBelongsToUser: async () => true,
+      async create(data) { received = data; return "1"; },
+    });
+    await service.create(validEvent(), "9");
+    assert.equal(received.important, true);
+  });
+
+  it("permite marcar o evento como não importante", async () => {
+    let received;
+    const service = createEventsService({
+      patientBelongsToUser: async () => true,
+      async create(data) { received = data; return "1"; },
+    });
+    await service.create(validEvent({ important: false }), "9");
+    assert.equal(received.important, false);
+  });
+
   it("cadastra um compromisso recorrente nos dias selecionados", async () => {
     let received;
     const service = createEventsService({

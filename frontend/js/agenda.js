@@ -15,6 +15,7 @@ const emptyDaily = document.querySelector("#empty-daily");
 const repeatWeekly = document.querySelector("#repeat-weekly");
 const recurrenceFields = document.querySelector("#recurrence-fields");
 const repeatUntil = document.querySelector("#repeat-until");
+const eventImportant = document.querySelector("#event-important");
 
 const WEEKDAY_ORDER = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -38,6 +39,7 @@ function formData() {
   const data = Object.fromEntries(new FormData(form).entries());
   data.repeatWeekly = repeatWeekly.checked;
   data.repeatWeekdays = [...form.querySelectorAll('[name="repeatWeekdays"]:checked')].map((input) => Number(input.value));
+  data.important = eventImportant.checked;
   return { ...data, patientId };
 }
 
@@ -133,6 +135,7 @@ function hideForm() { eventFormPanel.hidden = true; }
 function finishEditing(text = "") {
   editingId = null; form.reset(); form.elements.eventDate.value = selectedDate;
   repeatWeekly.disabled = false;
+  eventImportant.checked = true;
   updateRecurrenceFields();
   submitButton.textContent = "Cadastrar evento"; message.textContent = text;
 }
@@ -178,6 +181,7 @@ dailyBody.addEventListener("click", async (event) => {
     form.elements.eventDate.value = item.eventDate;
     form.elements.eventTime.value = item.eventTime;
     form.elements.notes.value = item.notes || "";
+    eventImportant.checked = item.important !== false;
     repeatWeekly.checked = false;
     repeatWeekly.disabled = true;
     updateRecurrenceFields();

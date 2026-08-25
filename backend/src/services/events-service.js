@@ -31,7 +31,9 @@ function validateEvent(input, editing = false) {
   if (!editing && !/^\d+$/.test(String(patientId ?? ""))) details.patientId = "Selecione um paciente";
   if (Object.keys(details).length) throw new EventValidationError(details);
 
-  return { title, category: category || null, eventDate, eventTime, notes: notes || null, patientId };
+  const important = input.important !== false;
+
+  return { title, category: category || null, eventDate, eventTime, notes: notes || null, patientId, important };
 }
 
 function recurringDates(start, end, weekdays) {

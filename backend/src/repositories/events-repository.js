@@ -3,7 +3,7 @@ const pool = require("../config/database");
 async function getAll(patientId, userId, { start, end } = {}) {
   const result = await pool.query(`
     SELECT e.id, e.title, e.category, to_char(e.event_date, 'YYYY-MM-DD') AS "eventDate",
-      to_char(e.event_time, 'HH24:MI') AS "eventTime", e.notes, e.status,
+      to_char(e.event_time, 'HH24:MI') AS "eventTime", e.notes, e.status, e.important,
       e.completed_at AS "completedAt",
       e.author_profile_id AS "authorProfileId", author.name AS "authorProfileName",
       e.completed_by_profile_id AS "completedByProfileId", completer.name AS "completedByProfileName"
@@ -25,9 +25,9 @@ async function patientBelongsToUser(patientId, userId) {
 
 async function create(event) {
   const result = await pool.query(
-    `INSERT INTO events (title, category, event_date, event_time, notes, patient_id, author_profile_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-    [event.title, event.category, event.eventDate, event.eventTime, event.notes, event.patientId, event.authorProfileId],
+    `INSERT INTO events (title, category, event_date, event_time, notes, patient_id, author_profile_id, important)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+    [event.title, event.category, event.eventDate, event.eventTime, event.notes, event.patientId, event.authorProfileId, event.important],
   );
   return result.rows[0].id;
 }
@@ -39,9 +39,9 @@ async function createMany(events) {
     const ids = [];
     for (const event of events) {
       const result = await client.query(
-        `INSERT INTO events (title, category, event_date, event_time, notes, patient_id, author_profile_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-        [event.title, event.category, event.eventDate, event.eventTime, event.notes, event.patientId, event.authorProfileId],
+        `INSERT INTO events (title, category, event_date, event_time, notes, patient_id, author_profile_id, important)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+        [event.title, event.category, event.eventDate, event.eventTime, event.notes, event.patientId, event.authorProfileId, event.important],
       );
       ids.push(result.rows[0].id);
     }
@@ -58,9 +58,9 @@ async function createMany(events) {
 async function update(id, event, userId) {
   const result = await pool.query(
     `UPDATE events SET title = $1, category = $2, event_date = $3, event_time = $4, notes = $5,
-      updated_at = CURRENT_TIMESTAMP
-     WHERE id = $6 AND patient_id IN (SELECT id FROM patients WHERE user_id = $7) RETURNING id`,
-    [event.title, event.category, event.eventDate, event.eventTime, event.notes, id, userId],
+      important = $6, updated_at = CURRENT_TIMESTAMP
+     WHERE id = $7 AND patient_id IN (SELECT id FROM patients WHERE user_id = $8) RETURNING id`,
+    [event.title, event.category, event.eventDate, event.eventTime, event.notes, event.important, id, userId],
   );
   return result.rowCount > 0;
 }
@@ -92,7 +92,7 @@ async function getUpcoming(patientId, userId, days) {
     `SELECT id, title, category, to_char(event_date, 'YYYY-MM-DD') AS "eventDate",
       to_char(event_time, 'HH24:MI') AS "eventTime"
      FROM events
-     WHERE status = 'pending' AND patient_id = $1
+     WHERE status = 'pending' AND important = true AND patient_id = $1
        AND patient_id IN (SELECT id FROM patients WHERE user_id = $2)
        AND event_date BETWEEN CURRENT_DATE AND CURRENT_DATE + $3::integer
      ORDER BY event_date, event_time`,
