@@ -1,6 +1,9 @@
 const message = document.querySelector("#dashboard-message");
 const todayList = document.querySelector("#today-list");
 const todayEmpty = document.querySelector("#today-empty");
+const todayDonePanel = document.querySelector("#today-done-panel");
+const todayDoneList = document.querySelector("#today-done-list");
+const todayDoneCount = document.querySelector("#today-done-count");
 const vitalsList = document.querySelector("#vitals-today-list");
 const vitalsEmpty = document.querySelector("#vitals-today-empty");
 const notesList = document.querySelector("#notes-today-list");
@@ -211,10 +214,21 @@ async function loadTasks() {
     })),
   ].sort((first, second) => first.time.localeCompare(second.time) || first.title.localeCompare(second.title));
 
-  todayEmpty.textContent = selectedDate === today ? "Nenhuma tarefa programada para hoje." : "Nenhuma tarefa programada para esta data.";
+  const pendingItems = items.filter((item) => item.status === "pending");
+  const doneItems = items.filter((item) => item.status !== "pending");
+
+  todayEmpty.textContent = items.length === 0
+    ? (selectedDate === today ? "Nenhuma tarefa programada para hoje." : "Nenhuma tarefa programada para esta data.")
+    : "Todas as tarefas de hoje foram concluídas.";
   todayList.replaceChildren();
-  todayEmpty.hidden = items.length > 0;
-  items.forEach((item) => todayList.append(taskRow(item)));
+  todayEmpty.hidden = pendingItems.length > 0;
+  pendingItems.forEach((item) => todayList.append(taskRow(item)));
+
+  todayDoneList.replaceChildren();
+  todayDoneCount.textContent = String(doneItems.length);
+  todayDonePanel.hidden = doneItems.length === 0;
+  doneItems.forEach((item) => todayDoneList.append(taskRow(item)));
+
   updateSummary(items);
 }
 

@@ -599,6 +599,25 @@ h1 {
   border-bottom: 0;
 }
 
+.today-done {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #edf1f3;
+}
+
+.today-done__summary {
+  cursor: pointer;
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.today-done .today-list {
+  margin-top: 12px;
+}
+
 .today-item__time {
   flex-shrink: 0;
   width: 48px;
