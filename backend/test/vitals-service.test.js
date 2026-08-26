@@ -56,7 +56,7 @@ describe("vitals service", () => {
     const result = await service.create(validInput());
 
     assert.deepEqual(receivedData, {
-      measuredAt: "2026-08-18T17:07:00",
+      measuredAt: "2026-08-18T17:07:00-03:00",
       shift: "Tarde",
       systolicPressure: 120,
       diastolicPressure: 80,

@@ -93,7 +93,7 @@ function validateAndMap(input, editing = false) {
   if (Object.keys(details).length > 0) throw new ValidationError(details);
 
   return {
-    measuredAt: `${date}T${time}:00`,
+    measuredAt: `${date}T${time}:00-03:00`,
     shift,
     systolicPressure: pressureMatch ? Number(pressureMatch[1]) : null,
     diastolicPressure: pressureMatch ? Number(pressureMatch[2]) : null,

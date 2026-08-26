@@ -11,6 +11,8 @@ const tabNovo = document.querySelector("#tab-novo");
 const tabHistorico = document.querySelector("#tab-historico");
 
 const editForm = document.querySelector("#edit-form");
+const editTimeInput = document.querySelector("#edit-time");
+const editShiftInput = document.querySelector("#edit-shift");
 const editPanel = document.querySelector("#edit-panel");
 const editFormMessage = document.querySelector("#edit-form-message");
 const editSubmitButton = document.querySelector("#edit-submit-button");
@@ -55,6 +57,14 @@ function fillCurrentDateTime() {
   ].join(":");
   shiftInput.value = selectShiftFromHour(now.getHours());
 }
+
+function syncShiftWithTime(time, shift) {
+  const hour = Number(time.value.split(":")[0]);
+  if (Number.isInteger(hour)) shift.value = selectShiftFromHour(hour);
+}
+
+timeInput.addEventListener("input", () => syncShiftWithTime(timeInput, shiftInput));
+editTimeInput.addEventListener("input", () => syncShiftWithTime(editTimeInput, editShiftInput));
 
 vitalsForm.addEventListener("submit", async (event) => {
   event.preventDefault();
