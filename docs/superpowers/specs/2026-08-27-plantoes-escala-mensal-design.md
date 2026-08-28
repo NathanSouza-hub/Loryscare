@@ -157,8 +157,10 @@ Backend (`POST /api/schedule-months`), tudo em uma transação:
 
 ## Fluxo 3 — Tabela da escala + edição individual
 
-Colunas: Data, Início, Término, Cuidador, Status (ver seção de status), Ações. Reaproveita o
-padrão de tabela já usado em `agenda.html`/histórico — sem calendário visual novo.
+Colunas: Data, Início, Término, Cuidador, Turno (ex.: "12h · Manhã", calculado no cliente a
+partir da hora de início e do `durationHours` do mês, reaproveitando a mesma lógica de
+`periodFromHour` já usada em `work-shifts-service`), Status (ver seção de status), Ações.
+Reaproveita o padrão de tabela já usado em `agenda.html`/histórico — sem calendário visual novo.
 
 - **Editar** (`PATCH /api/schedule-shifts/:id`): abre formulário inline/modal reaproveitando
   `.form-panel`/`.form-grid` para trocar `profile_id` e/ou os horários **daquele registro só**.
@@ -216,8 +218,8 @@ existente ("calculado on-the-fly na leitura"):
 | Status | Condição |
 |---|---|
 | Programado | sem `work_shift` vinculado e `now() <= scheduled_end_at` |
-| Em andamento | `work_shift` vinculado com `ended_at IS NULL` (inclui atrasado — não fecha sozinho) |
-| Concluído | `work_shift` vinculado com `ended_at IS NOT NULL`, OU vinculado e `now() > scheduled_end_at` |
+| Em andamento | `work_shift` vinculado, `ended_at IS NULL` e `now() <= scheduled_end_at` |
+| Concluído | `work_shift` vinculado e (`ended_at IS NOT NULL` OU `now() > scheduled_end_at`) |
 | Não realizado | sem `work_shift` vinculado e `now() > scheduled_end_at` |
 
 ## Validações principais
