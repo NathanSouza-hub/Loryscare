@@ -38,6 +38,10 @@ const createWorkShiftsController = require("./controllers/work-shifts-controller
 const workShiftsRepository = require("./repositories/work-shifts-repository");
 const createWorkShiftsRouter = require("./routes/work-shifts-routes");
 const createWorkShiftsService = require("./services/work-shifts-service");
+const createScheduleMonthsController = require("./controllers/schedule-months-controller");
+const scheduleMonthsRepository = require("./repositories/schedule-months-repository");
+const createScheduleMonthsRouter = require("./routes/schedule-months-routes");
+const createScheduleMonthsService = require("./services/schedule-months-service");
 const createRequireAuth = require("./middleware/require-auth");
 const createAttachProfile = require("./middleware/attach-profile");
 const createChangeBus = require("./realtime/change-bus");
@@ -87,6 +91,10 @@ app.use("/api/caregiver-profiles", requireAuth, createCaregiverProfilesRouter(ca
 const workShiftsService = createWorkShiftsService(workShiftsRepository);
 const workShiftsController = createWorkShiftsController(workShiftsService);
 app.use("/api/work-shifts", requireAuth, attachProfile, createWorkShiftsRouter(workShiftsController));
+
+const scheduleMonthsService = createScheduleMonthsService(scheduleMonthsRepository, caregiverProfilesRepository);
+const scheduleMonthsController = createScheduleMonthsController(scheduleMonthsService, changeBus);
+app.use("/api/schedule-months", requireAuth, createScheduleMonthsRouter(scheduleMonthsController));
 
 app.get("/api/stream", (request, response) => {
   let userId;
