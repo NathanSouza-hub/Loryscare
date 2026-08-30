@@ -47,12 +47,44 @@ function validateInput(input) {
   return { startedAt, durationHours };
 }
 
-function createWorkShiftsService(repository) {
+function createWorkShiftsService(repository, scheduleShiftsRepository) {
+  async function startFromSchedule(scheduleShiftId, userId) {
+    if (!/^\d+$/.test(String(scheduleShiftId ?? ""))) {
+      throw new WorkShiftValidationError({ scheduleShiftId: "Identificador inválido" });
+    }
+    const scheduleShift = await scheduleShiftsRepository.findById(scheduleShiftId, userId);
+    if (!scheduleShift) throw new WorkShiftValidationError({ scheduleShiftId: "Plantão programado não encontrado" });
+    if (await repository.existsForScheduleShift(scheduleShiftId)) {
+      throw new WorkShiftValidationError({ scheduleShiftId: "Este plantão já foi iniciado" });
+    }
+    const durationHours = Math.round(
+      (new Date(scheduleShift.scheduledEndAt) - new Date(scheduleShift.scheduledStartAt)) / 3600000,
+    );
+    const result = await repository.createExclusive({
+      userId,
+      profileId: scheduleShift.profileId,
+      startedAt: nowTimestamp(),
+      durationHours,
+      now: nowTimestamp(),
+      scheduleShiftId,
+      scheduledStartAt: `${scheduleShift.scheduledDate} ${scheduleShift.scheduledStartTime}:00`,
+      scheduledEndAt: `${scheduleShift.scheduledEndDate} ${scheduleShift.scheduledEndTime}:00`,
+    });
+    if (!result.created && String(result.shift.profileId) !== String(scheduleShift.profileId)) {
+      throw new WorkShiftValidationError({
+        scheduleShiftId: `${result.shift.profileName} já está de plantão até ${result.shift.expectedEndTime}`,
+      });
+    }
+    return { ...attachPeriod(result.shift), alreadyActive: !result.created };
+  }
+
   async function start(input, userId, profileId) {
+    const body = input ?? {};
+    if (body.scheduleShiftId) return startFromSchedule(body.scheduleShiftId, userId);
     if (!profileId) {
       throw new WorkShiftValidationError({ profileId: "Selecione um cuidador para iniciar o plantão" });
     }
-    const { startedAt, durationHours } = validateInput(input ?? {});
+    const { startedAt, durationHours } = validateInput(body);
     const result = await repository.createExclusive({
       userId, profileId, startedAt, durationHours, now: nowTimestamp(),
     });

@@ -92,7 +92,7 @@ const caregiverProfilesService = createCaregiverProfilesService(caregiverProfile
 const caregiverProfilesController = createCaregiverProfilesController(caregiverProfilesService, changeBus);
 app.use("/api/caregiver-profiles", requireAuth, createCaregiverProfilesRouter(caregiverProfilesController));
 
-const workShiftsService = createWorkShiftsService(workShiftsRepository);
+const workShiftsService = createWorkShiftsService(workShiftsRepository, scheduleShiftsRepository);
 const workShiftsController = createWorkShiftsController(workShiftsService);
 app.use("/api/work-shifts", requireAuth, attachProfile, createWorkShiftsRouter(workShiftsController));
 

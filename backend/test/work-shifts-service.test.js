@@ -98,4 +98,57 @@ describe("work shifts service", () => {
     assert.equal(result.profileName, "Eric");
     assert.equal(result.period, "Noite");
   });
+
+  it("inicia a partir de um plantão programado usando o cuidador atual da escala", async () => {
+    let received;
+    const service = createWorkShiftsService(
+      {
+        createExclusive: async (data) => { received = data; return { created: true, shift: { id: "1", profileId: "4", startedTime: "06:07", expectedEndTime: "18:07", durationHours: 12 } }; },
+        existsForScheduleShift: async () => false,
+      },
+      {
+        findById: async () => ({
+          id: "20", profileId: "4",
+          scheduledDate: "2026-08-27", scheduledEndDate: "2026-08-27",
+          scheduledStartTime: "06:00", scheduledEndTime: "18:00",
+          scheduledStartAt: new Date("2026-08-27T06:00:00"), scheduledEndAt: new Date("2026-08-27T18:00:00"),
+        }),
+      },
+    );
+    const result = await service.start({ scheduleShiftId: "20" }, "9", null);
+    assert.equal(received.profileId, "4");
+    assert.equal(received.durationHours, 12);
+    assert.equal(received.scheduleShiftId, "20");
+    assert.equal(received.scheduledStartAt, "2026-08-27 06:00:00");
+    assert.equal(received.scheduledEndAt, "2026-08-27 18:00:00");
+    assert.equal(result.period, "Manhã");
+  });
+
+  it("rejeita iniciar duas vezes o mesmo plantão programado", async () => {
+    const service = createWorkShiftsService(
+      { createExclusive: async () => assert.fail(), existsForScheduleShift: async () => true },
+      { findById: async () => ({ id: "20", profileId: "4" }) },
+    );
+    await assert.rejects(service.start({ scheduleShiftId: "20" }, "9", null), WorkShiftValidationError);
+  });
+
+  it("rejeita iniciar um plantão programado que não existe ou não pertence à conta", async () => {
+    const service = createWorkShiftsService(
+      { createExclusive: async () => assert.fail() },
+      { findById: async () => null },
+    );
+    await assert.rejects(service.start({ scheduleShiftId: "999" }, "9", null), WorkShiftValidationError);
+  });
+
+  it("continua funcionando sem scheduleShiftId, exatamente como antes", async () => {
+    let received;
+    const service = createWorkShiftsService({
+      async createExclusive(data) {
+        received = data;
+        return { created: true, shift: { id: "1", profileId: "4", startedTime: "08:00", expectedEndTime: "20:00", durationHours: 12 } };
+      },
+    });
+    await service.start(pastInput({ startedTime: "08:00", startedDate: "2026-08-20" }), "9", "4");
+    assert.equal(received.scheduleShiftId, undefined);
+  });
 });
