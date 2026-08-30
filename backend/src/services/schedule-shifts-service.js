@@ -91,7 +91,7 @@ function createScheduleShiftsService(repository, caregiverProfilesRepository) {
     if (String(shiftIdA) === String(shiftIdB)) {
       throw new ScheduleShiftValidationError({ shiftIdB: "Escolha dois plantões diferentes" });
     }
-    if ((await repository.hasWorkShift(shiftIdA)) || (await repository.hasWorkShift(shiftIdB))) {
+    if ((await repository.hasWorkShift(shiftIdA, userId)) || (await repository.hasWorkShift(shiftIdB, userId))) {
       throw new ScheduleShiftValidationError({ shiftIdA: "Não é possível trocar um plantão que já foi iniciado" });
     }
     const result = await repository.swapProfiles(shiftIdA, shiftIdB, userId);

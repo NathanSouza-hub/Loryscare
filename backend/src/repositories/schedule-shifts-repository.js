@@ -109,8 +109,13 @@ async function swapProfiles(idA, idB, userId) {
   }
 }
 
-async function hasWorkShift(id) {
-  const result = await pool.query("SELECT 1 FROM work_shifts WHERE schedule_shift_id = $1", [id]);
+async function hasWorkShift(id, userId) {
+  const result = await pool.query(
+    `SELECT 1 FROM work_shifts ws
+     JOIN schedule_shifts ss ON ss.id = ws.schedule_shift_id
+     WHERE ws.schedule_shift_id = $1 AND ss.user_id = $2`,
+    [id, userId],
+  );
   return result.rowCount > 0;
 }
 
