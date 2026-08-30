@@ -58,8 +58,41 @@
             </div>
             <p class="form-message" id="month-message" aria-live="polite"></p>
 
-            <div id="generate-panel" hidden></div>
-            <div id="summary-panel" hidden></div>
+            <div id="generate-panel" hidden>
+              <h3>Gerar escala do mês</h3>
+              <form id="generate-form">
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label for="duration-select">Tipo de plantão</label>
+                    <select id="duration-select" name="durationHours" required>
+                      <option value="12">12 horas</option>
+                      <option value="24">24 horas</option>
+                    </select>
+                  </div>
+                  <div class="form-field"><label for="first-start-time">Início do 1º período</label><input id="first-start-time" name="firstStartTime" type="time" required /></div>
+                  <div class="form-field" id="second-start-field"><label for="second-start-time">Início do 2º período</label><input id="second-start-time" name="secondStartTime" type="time" /></div>
+                  <div class="form-field form-field--full">
+                    <label>Cuidadores participantes</label>
+                    <div class="weekday-options" id="caregiver-checklist"></div>
+                  </div>
+                  <div class="form-field form-field--full">
+                    <label>Ordem do revezamento</label>
+                    <ul class="reorder-list" id="reorder-list"></ul>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button class="primary-button" type="submit">Gerar escala do mês</button>
+                  <p class="form-message" id="generate-message" aria-live="polite"></p>
+                </div>
+              </form>
+            </div>
+            <div id="summary-panel" hidden>
+              <div class="history-panel__header">
+                <div><p class="eyebrow">Configuração</p><h3 id="summary-text"></h3></div>
+                <button class="secondary-button" id="delete-month-button" type="button">Excluir escala do mês</button>
+              </div>
+              <p class="form-message" id="summary-message" aria-live="polite"></p>
+            </div>
           </section>
 
           <section class="history-panel" id="shifts-panel" aria-labelledby="shifts-label" hidden>
