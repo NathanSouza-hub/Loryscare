@@ -124,6 +124,10 @@ durationSelect.addEventListener("change", toggleSecondStartField);
 
 generateForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (orderedCaregiverIds.length === 0) {
+    generateMessage.textContent = "Selecione ao menos um cuidador";
+    return;
+  }
   generateMessage.textContent = "Gerando...";
   try {
     const formData = Object.fromEntries(new FormData(generateForm).entries());
