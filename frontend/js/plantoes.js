@@ -20,9 +20,30 @@ const MONTH_NAMES = [
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ];
 
+const STATUS_BADGE_CLASS = {
+  "Programado": "status-badge--scheduled",
+  "Em andamento": "status-badge--in-progress",
+  "Concluído": "status-badge--done",
+  "Não realizado": "status-badge--missed",
+};
+
+function periodFromHour(hour) {
+  if (hour >= 6 && hour < 12) return "Manhã";
+  if (hour >= 12 && hour < 18) return "Tarde";
+  if (hour >= 18) return "Noite";
+  return "Madrugada";
+}
+
+function formatDateLabel(isoDate) {
+  const [year, month, day] = isoDate.split("-");
+  return `${day}/${month}`;
+}
+
 let allCaregivers = [];
 let orderedCaregiverIds = [];
 let currentScheduleMonth = null;
+const shiftsBody = document.querySelector("#shifts-body");
+let currentShifts = [];
 
 function populateMonthYearSelects() {
   MONTH_NAMES.forEach((name, index) => monthSelect.add(new Option(name, String(index + 1))));
@@ -97,6 +118,40 @@ reorderList.addEventListener("drop", (event) => {
   if (from === -1 || to === -1) return;
   moveCaregiver(from, to);
 });
+
+function shiftRow(shift) {
+  const row = document.createElement("tr");
+  const cell = (text) => { const td = document.createElement("td"); td.textContent = text; return td; };
+
+  const badge = document.createElement("span");
+  badge.className = `status-badge ${STATUS_BADGE_CLASS[shift.status] || ""}`;
+  badge.textContent = shift.status;
+  const statusCell = document.createElement("td");
+  statusCell.append(badge);
+
+  const turnCell = cell(`${currentScheduleMonth.durationHours}h · ${periodFromHour(Number(shift.scheduledStartTime.slice(0, 2)))}`);
+
+  const actionsCell = document.createElement("td");
+
+  row.append(
+    cell(formatDateLabel(shift.scheduledDate)),
+    cell(shift.scheduledStartTime),
+    cell(shift.scheduledEndTime),
+    cell(shift.profileName),
+    turnCell,
+    statusCell,
+    actionsCell,
+  );
+  return row;
+}
+
+async function loadShifts() {
+  const year = Number(yearSelect.value);
+  const month = Number(monthSelect.value);
+  currentShifts = await ScheduleRepository.listShifts(year, month);
+  shiftsBody.replaceChildren();
+  currentShifts.forEach((shift) => shiftsBody.append(shiftRow(shift)));
+}
 
 function renderCaregiverChecklist() {
   caregiverChecklist.replaceChildren();
@@ -184,6 +239,7 @@ async function loadMonth() {
     summaryText.textContent = `${durationLabel} · início(s) às ${periodsLabel} · ${namesLabel}`;
     summaryMessage.textContent = "";
     summaryPanel.hidden = false;
+    await loadShifts();
     shiftsPanel.hidden = false;
   } catch (error) {
     monthMessage.textContent = error.message;
@@ -200,3 +256,7 @@ CaregiverProfilesRepository.getAll().then((caregivers) => {
   allCaregivers = caregivers;
   loadMonth();
 }).catch((error) => { monthMessage.textContent = error.message; });
+
+LiveUpdates.connect((event) => {
+  if (["schedule-months", "schedule-shifts"].includes(event.resource)) loadMonth();
+});
