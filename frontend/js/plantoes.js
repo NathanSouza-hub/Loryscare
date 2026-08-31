@@ -19,6 +19,7 @@ const editShiftForm = document.querySelector("#edit-shift-form");
 const editShiftMessage = document.querySelector("#edit-shift-message");
 const cancelEditShiftButton = document.querySelector("#cancel-edit-shift-button");
 let editingShiftId = null;
+let pendingSwapId = null;
 
 const MONTH_NAMES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -149,7 +150,16 @@ function shiftRow(shift) {
   deleteButton.innerHTML = icon("trash");
   deleteButton.title = "Excluir";
   deleteButton.addEventListener("click", () => deleteShiftRow(shift));
-  actionsCell.append(editButton, deleteButton);
+  const swapButton = document.createElement("button");
+  swapButton.type = "button";
+  swapButton.className = "table-action";
+  swapButton.textContent = pendingSwapId === shift.id
+    ? "Cancelar troca"
+    : pendingSwapId
+      ? "Trocar com este"
+      : "Trocar";
+  swapButton.addEventListener("click", () => handleSwapClick(shift));
+  actionsCell.append(editButton, deleteButton, swapButton);
 
   row.append(
     cell(formatDateLabel(shift.scheduledDate)),
@@ -207,6 +217,28 @@ async function deleteShiftRow(shift) {
     await loadShifts();
   } catch (error) {
     monthMessage.textContent = error.message;
+  }
+}
+
+async function handleSwapClick(shift) {
+  if (pendingSwapId === shift.id) {
+    pendingSwapId = null;
+    await loadShifts();
+    return;
+  }
+  if (!pendingSwapId) {
+    pendingSwapId = shift.id;
+    await loadShifts();
+    return;
+  }
+  const otherId = pendingSwapId;
+  pendingSwapId = null;
+  try {
+    await ScheduleRepository.swapShifts(otherId, shift.id);
+    await loadShifts();
+  } catch (error) {
+    monthMessage.textContent = error.message;
+    await loadShifts();
   }
 }
 
