@@ -14,6 +14,11 @@ const reorderList = document.querySelector("#reorder-list");
 const summaryText = document.querySelector("#summary-text");
 const summaryMessage = document.querySelector("#summary-message");
 const deleteMonthButton = document.querySelector("#delete-month-button");
+const editShiftPanel = document.querySelector("#edit-shift-panel");
+const editShiftForm = document.querySelector("#edit-shift-form");
+const editShiftMessage = document.querySelector("#edit-shift-message");
+const cancelEditShiftButton = document.querySelector("#cancel-edit-shift-button");
+let editingShiftId = null;
 
 const MONTH_NAMES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -132,6 +137,19 @@ function shiftRow(shift) {
   const turnCell = cell(`${currentScheduleMonth.durationHours}h · ${periodFromHour(Number(shift.scheduledStartTime.slice(0, 2)))}`);
 
   const actionsCell = document.createElement("td");
+  const editButton = document.createElement("button");
+  editButton.type = "button";
+  editButton.className = "table-action table-action--icon";
+  editButton.innerHTML = icon("pencil");
+  editButton.title = "Editar";
+  editButton.addEventListener("click", () => openEditShift(shift));
+  const deleteButton = document.createElement("button");
+  deleteButton.type = "button";
+  deleteButton.className = "table-action table-action--icon table-action--danger";
+  deleteButton.innerHTML = icon("trash");
+  deleteButton.title = "Excluir";
+  deleteButton.addEventListener("click", () => deleteShiftRow(shift));
+  actionsCell.append(editButton, deleteButton);
 
   row.append(
     cell(formatDateLabel(shift.scheduledDate)),
@@ -151,6 +169,45 @@ async function loadShifts() {
   currentShifts = await ScheduleRepository.listShifts(year, month);
   shiftsBody.replaceChildren();
   currentShifts.forEach((shift) => shiftsBody.append(shiftRow(shift)));
+}
+
+function openEditShift(shift) {
+  editingShiftId = shift.id;
+  editShiftForm.elements.profileId.replaceChildren();
+  allCaregivers.forEach((caregiver) => editShiftForm.elements.profileId.add(new Option(caregiver.name, caregiver.id)));
+  editShiftForm.elements.profileId.value = shift.profileId;
+  editShiftForm.elements.scheduledDate.value = shift.scheduledDate;
+  editShiftForm.elements.scheduledStartTime.value = shift.scheduledStartTime;
+  editShiftForm.elements.scheduledEndDate.value = shift.scheduledEndDate;
+  editShiftForm.elements.scheduledEndTime.value = shift.scheduledEndTime;
+  editShiftMessage.textContent = "";
+  editShiftPanel.hidden = false;
+}
+
+cancelEditShiftButton.addEventListener("click", () => { editShiftPanel.hidden = true; editingShiftId = null; });
+
+editShiftForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  editShiftMessage.textContent = "Salvando...";
+  try {
+    const data = Object.fromEntries(new FormData(editShiftForm).entries());
+    await ScheduleRepository.updateShift(editingShiftId, data);
+    editShiftPanel.hidden = true;
+    editingShiftId = null;
+    await loadShifts();
+  } catch (error) {
+    editShiftMessage.textContent = error.message;
+  }
+});
+
+async function deleteShiftRow(shift) {
+  if (!window.confirm(`Excluir o plantão de ${shift.profileName} em ${formatDateLabel(shift.scheduledDate)}?`)) return;
+  try {
+    await ScheduleRepository.deleteShift(shift.id);
+    await loadShifts();
+  } catch (error) {
+    monthMessage.textContent = error.message;
+  }
 }
 
 function renderCaregiverChecklist() {

@@ -103,6 +103,23 @@
                 <tbody id="shifts-body"></tbody>
               </table>
             </div>
+            <div id="edit-shift-panel" hidden>
+              <h3>Editar plantão</h3>
+              <form id="edit-shift-form">
+                <div class="form-grid">
+                  <div class="form-field form-field--full"><label for="edit-shift-profile">Cuidador</label><select id="edit-shift-profile" name="profileId" required></select></div>
+                  <div class="form-field"><label for="edit-shift-date">Data</label><input id="edit-shift-date" name="scheduledDate" type="date" required /></div>
+                  <div class="form-field"><label for="edit-shift-start">Início</label><input id="edit-shift-start" name="scheduledStartTime" type="time" required /></div>
+                  <div class="form-field"><label for="edit-shift-end-date">Data de término</label><input id="edit-shift-end-date" name="scheduledEndDate" type="date" required /></div>
+                  <div class="form-field"><label for="edit-shift-end">Término</label><input id="edit-shift-end" name="scheduledEndTime" type="time" required /></div>
+                </div>
+                <div class="form-actions">
+                  <button class="primary-button" type="submit">Salvar alterações</button>
+                  <button class="secondary-button" type="button" id="cancel-edit-shift-button">Cancelar</button>
+                  <p class="form-message" id="edit-shift-message" aria-live="polite"></p>
+                </div>
+              </form>
+            </div>
           </section>
         </main>
         <footer><div class="container"><p><span class="footer-heart"></span>Lory's Care — apoio para o cuidado cotidiano.</p></div></footer>
