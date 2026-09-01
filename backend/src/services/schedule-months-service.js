@@ -9,6 +9,10 @@ function isTime(value) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 }
 
+function minutesOf(value) {
+  return Number(value.slice(0, 2)) * 60 + Number(value.slice(3));
+}
+
 function daysInMonth(year, month) {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
@@ -67,8 +71,11 @@ function validateInput(input) {
   if (durationHours !== 12 && durationHours !== 24) details.durationHours = "Escolha 12h ou 24h";
   if (!isTime(firstStartTime)) details.firstStartTime = "Informe um horário válido";
   if (durationHours === 12 && !isTime(secondStartTime)) details.secondStartTime = "Informe um horário válido";
-  if (durationHours === 12 && isTime(firstStartTime) && isTime(secondStartTime) && secondStartTime <= firstStartTime) {
-    details.secondStartTime = "O segundo período deve começar depois do primeiro";
+  if (
+    durationHours === 12 && isTime(firstStartTime) && isTime(secondStartTime)
+    && ((minutesOf(secondStartTime) - minutesOf(firstStartTime) + 1440) % 1440) !== 720
+  ) {
+    details.secondStartTime = "Em plantões de 12h os dois períodos devem começar com 12 horas de diferença";
   }
   if (!caregiverIds.length) details.caregiverIds = "Selecione ao menos um cuidador";
   if (new Set(caregiverIds).size !== caregiverIds.length) {

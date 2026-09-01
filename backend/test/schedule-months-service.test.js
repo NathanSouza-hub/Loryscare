@@ -38,10 +38,10 @@ describe("schedule months service", () => {
     );
   });
 
-  it("rejeita segundo horário antes ou igual ao primeiro", async () => {
+  it("rejeita quando os dois períodos não têm 12 horas de diferença", async () => {
     const service = createScheduleMonthsService({}, fakeCaregiverProfiles());
     await assert.rejects(
-      service.create(baseInput({ durationHours: 12, firstStartTime: "18:00", secondStartTime: "06:00" }), "9"),
+      service.create(baseInput({ durationHours: 12, firstStartTime: "06:00", secondStartTime: "20:00" }), "9"),
       ScheduleMonthValidationError,
     );
   });
