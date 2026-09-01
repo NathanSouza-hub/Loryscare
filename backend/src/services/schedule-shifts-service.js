@@ -62,12 +62,19 @@ function createScheduleShiftsService(repository, caregiverProfilesRepository) {
     if (scheduledEndAt <= scheduledStartAt) {
       throw new ScheduleShiftValidationError({ scheduledEndTime: "O término deve ser depois do início" });
     }
+    const durationHours = (new Date(scheduledEndAt) - new Date(scheduledStartAt)) / 3600000;
+    if (durationHours !== 12 && durationHours !== 24) {
+      throw new ScheduleShiftValidationError({ scheduledEndTime: "A duração deve ser de 12 ou 24 horas" });
+    }
     if (!(await caregiverProfilesRepository.belongsToUser(newProfileId, userId))) {
       throw new ScheduleShiftValidationError({ profileId: "Cuidador inválido" });
     }
 
     const existing = await repository.findById(id, userId);
     if (!existing) throw new ScheduleShiftNotFoundError();
+    if (await repository.hasWorkShift(id, userId)) {
+      throw new ScheduleShiftValidationError({ id: "Não é possível editar um plantão que já foi iniciado" });
+    }
 
     const previousProfileId = existing.profileId;
     if (!(await repository.update(id, { profileId: newProfileId, scheduledStartAt, scheduledEndAt }, userId))) {

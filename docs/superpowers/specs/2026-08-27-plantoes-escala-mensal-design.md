@@ -107,11 +107,14 @@ CREATE UNIQUE INDEX idx_work_shifts_schedule_shift_once
 ```
 
 Um `work_shift` sem `schedule_shift_id` é, por definição, o plantão extraordinário/manual que já
-existe hoje — não precisa de coluna booleana adicional. `started_at`/`expected_end_at` continuam
-sendo o horário **real** (comportamento e nomes já existentes, sem mudança); `scheduled_start_at`/
-`scheduled_end_at` em `work_shifts` são um **snapshot** tirado no momento do início real, para que
-o previsto fique registrado para sempre mesmo que o `schedule_shift` original seja depois editado
-ou excluído.
+existe hoje — não precisa de coluna booleana adicional. `started_at` é sempre o horário **real**
+de início. `expected_end_at` é `started_at + duration_hours` (horário real) para plantões
+extraordinários (sem `schedule_shift_id`); para plantões vinculados a uma escala, `expected_end_at`
+é em vez disso o `scheduled_end_at` do `schedule_shift`, para que o horário previsto não encolha
+quando o cuidador começa atrasado e continue bloqueando corretamente o próximo cuidador via
+exclusividade da conta. `scheduled_start_at`/`scheduled_end_at` em `work_shifts` continuam sendo um
+**snapshot** imutável tirado no momento do início real, para que o previsto fique registrado para
+sempre mesmo que o `schedule_shift` original seja depois editado ou excluído.
 
 ## Fluxo 1 — Nova aba "Plantões"
 
@@ -232,7 +235,8 @@ existente ("calculado on-the-fly na leitura"):
 - Excluir `schedule_months` → bloqueado se qualquer `schedule_shift` do mês tiver `work_shift`
   vinculado ("Este mês já tem plantões iniciados; não é possível excluir a escala.").
 - `schedule-shift-validation-error`: editar/trocar exige que o novo `profile_id` pertença à conta;
-  troca bloqueada se qualquer um dos dois já estiver vinculado a um `work_shift` (Fluxo 3).
+  edição e troca ambas bloqueadas se o `schedule_shift` (qualquer um dos dois, no caso da troca)
+  já estiver vinculado a um `work_shift` (Fluxo 3).
 - `work-shifts-service.start` com `scheduleShiftId`: erro "Este plantão já foi iniciado." se já
   vinculado; erro de validação se o `scheduleShiftId` não pertencer à conta.
 - `GET /api/schedule-shifts/current`: valida `profileId` numérico e pertencente à conta antes de

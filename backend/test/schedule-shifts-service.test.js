@@ -111,6 +111,31 @@ describe("schedule shifts service", () => {
     );
   });
 
+  it("rejeita editar com duração diferente de 12 ou 24 horas", async () => {
+    const service = createScheduleShiftsService({}, fakeCaregiverProfiles());
+    await assert.rejects(
+      service.update("1", {
+        profileId: "1", scheduledDate: "2026-08-27", scheduledStartTime: "06:00",
+        scheduledEndDate: "2026-08-27", scheduledEndTime: "15:00",
+      }, "9", "1"),
+      ScheduleShiftValidationError,
+    );
+  });
+
+  it("bloqueia edição quando o plantão já foi iniciado", async () => {
+    const repository = {
+      findById: async () => row({ profileId: "1" }),
+      hasWorkShift: async () => true,
+    };
+    const service = createScheduleShiftsService(repository, fakeCaregiverProfiles());
+    await assert.rejects(
+      service.update("1", {
+        profileId: "1", scheduledDate: "2026-08-27", scheduledStartTime: "06:00", scheduledEndTime: "18:00",
+      }, "9", "3"),
+      ScheduleShiftValidationError,
+    );
+  });
+
   it("rejeita editar para um cuidador que não pertence à conta", async () => {
     const service = createScheduleShiftsService({}, fakeCaregiverProfiles(["1"]));
     await assert.rejects(
@@ -125,6 +150,7 @@ describe("schedule shifts service", () => {
     let recorded;
     const repository = {
       findById: async () => row({ profileId: "1" }),
+      hasWorkShift: async () => false,
       update: async () => true,
       recordSwap: async (entry) => { recorded = entry; },
     };
@@ -141,6 +167,7 @@ describe("schedule shifts service", () => {
     let recordCalled = false;
     const repository = {
       findById: async () => row({ profileId: "1" }),
+      hasWorkShift: async () => false,
       update: async () => true,
       recordSwap: async () => { recordCalled = true; },
     };
