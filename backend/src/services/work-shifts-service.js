@@ -57,6 +57,10 @@ function createWorkShiftsService(repository, scheduleShiftsRepository) {
     if (await repository.existsForScheduleShift(scheduleShiftId, userId)) {
       throw new WorkShiftValidationError({ scheduleShiftId: "Este plantão já foi iniciado" });
     }
+    const now = new Date();
+    if (new Date(scheduleShift.scheduledStartAt) > now || new Date(scheduleShift.scheduledEndAt) <= now) {
+      throw new WorkShiftValidationError({ scheduleShiftId: "Este plantão programado não está no horário de agora" });
+    }
     const durationHours = Math.round(
       (new Date(scheduleShift.scheduledEndAt) - new Date(scheduleShift.scheduledStartAt)) / 3600000,
     );

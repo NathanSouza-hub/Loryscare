@@ -14,6 +14,12 @@ function pastInput(overrides = {}) {
   };
 }
 
+function scheduleWindow(hoursBeforeNow, totalDurationHours) {
+  const scheduledStartAt = new Date(Date.now() - hoursBeforeNow * 60 * 60 * 1000);
+  const scheduledEndAt = new Date(scheduledStartAt.getTime() + totalDurationHours * 60 * 60 * 1000);
+  return { scheduledStartAt, scheduledEndAt };
+}
+
 describe("work shifts service", () => {
   it("rejeita iniciar plantão sem perfil selecionado", async () => {
     const service = createWorkShiftsService({ createExclusive: async () => assert.fail() });
@@ -111,7 +117,7 @@ describe("work shifts service", () => {
           id: "20", profileId: "4",
           scheduledDate: "2026-08-27", scheduledEndDate: "2026-08-27",
           scheduledStartTime: "06:00", scheduledEndTime: "18:00",
-          scheduledStartAt: new Date("2026-08-27T06:00:00"), scheduledEndAt: new Date("2026-08-27T18:00:00"),
+          ...scheduleWindow(1, 12),
         }),
       },
     );
@@ -140,6 +146,36 @@ describe("work shifts service", () => {
     await assert.rejects(service.start({ scheduleShiftId: "999" }, "9", null), WorkShiftValidationError);
   });
 
+  it("rejeita iniciar plantão programado cuja janela já passou", async () => {
+    const service = createWorkShiftsService(
+      { createExclusive: async () => assert.fail(), existsForScheduleShift: async () => false },
+      {
+        findById: async () => ({
+          id: "20", profileId: "4",
+          scheduledDate: "2026-08-27", scheduledEndDate: "2026-08-27",
+          scheduledStartTime: "06:00", scheduledEndTime: "18:00",
+          ...scheduleWindow(14, 12),
+        }),
+      },
+    );
+    await assert.rejects(service.start({ scheduleShiftId: "20" }, "9", null), WorkShiftValidationError);
+  });
+
+  it("rejeita iniciar plantão programado cuja janela ainda não começou", async () => {
+    const service = createWorkShiftsService(
+      { createExclusive: async () => assert.fail(), existsForScheduleShift: async () => false },
+      {
+        findById: async () => ({
+          id: "20", profileId: "4",
+          scheduledDate: "2026-08-27", scheduledEndDate: "2026-08-27",
+          scheduledStartTime: "06:00", scheduledEndTime: "18:00",
+          ...scheduleWindow(-2, 12),
+        }),
+      },
+    );
+    await assert.rejects(service.start({ scheduleShiftId: "20" }, "9", null), WorkShiftValidationError);
+  });
+
   it("rejeita iniciar plantão programado cuja duração não é 12 nem 24 horas", async () => {
     const service = createWorkShiftsService(
       { createExclusive: async () => assert.fail(), existsForScheduleShift: async () => false },
@@ -148,7 +184,7 @@ describe("work shifts service", () => {
           id: "20", profileId: "4",
           scheduledDate: "2026-08-27", scheduledEndDate: "2026-08-27",
           scheduledStartTime: "06:00", scheduledEndTime: "20:00",
-          scheduledStartAt: new Date("2026-08-27T06:00:00"), scheduledEndAt: new Date("2026-08-27T20:00:00"),
+          ...scheduleWindow(1, 14),
         }),
       },
     );
@@ -167,7 +203,7 @@ describe("work shifts service", () => {
           id: "20", profileId: "4",
           scheduledDate: "2026-08-27", scheduledEndDate: "2026-08-27",
           scheduledStartTime: "06:00", scheduledEndTime: "18:00",
-          scheduledStartAt: new Date("2026-08-27T06:00:00"), scheduledEndAt: new Date("2026-08-27T18:00:00"),
+          ...scheduleWindow(1, 12),
         }),
       },
     );
