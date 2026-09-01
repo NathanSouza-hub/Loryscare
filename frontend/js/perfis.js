@@ -17,6 +17,7 @@ const shiftStepTitle = document.querySelector("#shift-step-title");
 const shiftForm = document.querySelector("#shift-form");
 const shiftMessage = document.querySelector("#shift-message");
 const skipShiftButton = document.querySelector("#skip-shift-button");
+const shiftStepBackButton = document.querySelector("#shift-step-back-button");
 const startShiftButton = document.querySelector("#start-shift-button");
 let caregiverProfiles = [];
 let pendingProfile = null;
@@ -222,6 +223,7 @@ skipShiftButton.addEventListener("click", () => {
   backToProfiles();
 });
 skipExtraordinaryButton.addEventListener("click", backToProfiles);
+shiftStepBackButton.addEventListener("click", backToProfiles);
 startShiftButton.addEventListener("click", () => { showShiftStep(); });
 
 async function loadProfiles() {

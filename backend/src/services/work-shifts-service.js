@@ -54,12 +54,18 @@ function createWorkShiftsService(repository, scheduleShiftsRepository) {
     }
     const scheduleShift = await scheduleShiftsRepository.findById(scheduleShiftId, userId);
     if (!scheduleShift) throw new WorkShiftValidationError({ scheduleShiftId: "Plantão programado não encontrado" });
-    if (await repository.existsForScheduleShift(scheduleShiftId)) {
+    if (await repository.existsForScheduleShift(scheduleShiftId, userId)) {
       throw new WorkShiftValidationError({ scheduleShiftId: "Este plantão já foi iniciado" });
     }
     const durationHours = Math.round(
       (new Date(scheduleShift.scheduledEndAt) - new Date(scheduleShift.scheduledStartAt)) / 3600000,
     );
+    if (durationHours !== 12 && durationHours !== 24) {
+      throw new WorkShiftValidationError({
+        scheduleShiftId: "A duração deste plantão programado é inválida (12h ou 24h esperado).",
+      });
+    }
+    const scheduledEndAt = `${scheduleShift.scheduledEndDate} ${scheduleShift.scheduledEndTime}:00`;
     const result = await repository.createExclusive({
       userId,
       profileId: scheduleShift.profileId,
@@ -68,7 +74,8 @@ function createWorkShiftsService(repository, scheduleShiftsRepository) {
       now: nowTimestamp(),
       scheduleShiftId,
       scheduledStartAt: `${scheduleShift.scheduledDate} ${scheduleShift.scheduledStartTime}:00`,
-      scheduledEndAt: `${scheduleShift.scheduledEndDate} ${scheduleShift.scheduledEndTime}:00`,
+      scheduledEndAt,
+      expectedEndAt: scheduledEndAt,
     });
     if (!result.created && String(result.shift.profileId) !== String(scheduleShift.profileId)) {
       throw new WorkShiftValidationError({

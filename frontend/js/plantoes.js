@@ -302,6 +302,8 @@ deleteMonthButton.addEventListener("click", async () => {
 
 async function loadMonth() {
   pendingSwapId = null;
+  editShiftPanel.hidden = true;
+  editingShiftId = null;
   const year = Number(yearSelect.value);
   const month = Number(monthSelect.value);
   monthLabel.textContent = `${MONTH_NAMES[month - 1]} / ${year}`;

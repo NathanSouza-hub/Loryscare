@@ -140,6 +140,42 @@ describe("work shifts service", () => {
     await assert.rejects(service.start({ scheduleShiftId: "999" }, "9", null), WorkShiftValidationError);
   });
 
+  it("rejeita iniciar plantão programado cuja duração não é 12 nem 24 horas", async () => {
+    const service = createWorkShiftsService(
+      { createExclusive: async () => assert.fail(), existsForScheduleShift: async () => false },
+      {
+        findById: async () => ({
+          id: "20", profileId: "4",
+          scheduledDate: "2026-08-27", scheduledEndDate: "2026-08-27",
+          scheduledStartTime: "06:00", scheduledEndTime: "20:00",
+          scheduledStartAt: new Date("2026-08-27T06:00:00"), scheduledEndAt: new Date("2026-08-27T20:00:00"),
+        }),
+      },
+    );
+    await assert.rejects(service.start({ scheduleShiftId: "20" }, "9", null), WorkShiftValidationError);
+  });
+
+  it("usa o horário de término real da escala como expected_end_at, mesmo com início atrasado", async () => {
+    let received;
+    const service = createWorkShiftsService(
+      {
+        createExclusive: async (data) => { received = data; return { created: true, shift: { id: "1", profileId: "4", startedTime: "09:00", expectedEndTime: "18:00", durationHours: 12 } }; },
+        existsForScheduleShift: async () => false,
+      },
+      {
+        findById: async () => ({
+          id: "20", profileId: "4",
+          scheduledDate: "2026-08-27", scheduledEndDate: "2026-08-27",
+          scheduledStartTime: "06:00", scheduledEndTime: "18:00",
+          scheduledStartAt: new Date("2026-08-27T06:00:00"), scheduledEndAt: new Date("2026-08-27T18:00:00"),
+        }),
+      },
+    );
+    const result = await service.start({ scheduleShiftId: "20" }, "9", null);
+    assert.equal(received.expectedEndAt, "2026-08-27 18:00:00");
+    assert.equal(result.profileId, "4");
+  });
+
   it("continua funcionando sem scheduleShiftId, exatamente como antes", async () => {
     let received;
     const service = createWorkShiftsService({
