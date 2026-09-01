@@ -16,7 +16,6 @@ const shiftStep = document.querySelector("#shift-step");
 const shiftStepTitle = document.querySelector("#shift-step-title");
 const shiftForm = document.querySelector("#shift-form");
 const shiftMessage = document.querySelector("#shift-message");
-const skipShiftButton = document.querySelector("#skip-shift-button");
 const shiftStepBackButton = document.querySelector("#shift-step-back-button");
 const startShiftButton = document.querySelector("#start-shift-button");
 let caregiverProfiles = [];
@@ -124,7 +123,6 @@ const scheduledShiftSummary = document.querySelector("#scheduled-shift-summary")
 const noScheduledShiftMessage = document.querySelector("#no-scheduled-shift-message");
 const startScheduledButton = document.querySelector("#start-scheduled-button");
 const showExtraordinaryButton = document.querySelector("#show-extraordinary-button");
-const skipExtraordinaryButton = document.querySelector("#skip-extraordinary-button");
 let currentScheduledShift = null;
 
 function periodFromHour(hour) {
@@ -218,11 +216,6 @@ function backToProfiles() {
   shiftStep.hidden = true;
   profileStep.hidden = false;
 }
-skipShiftButton.addEventListener("click", () => {
-  if (CaregiverContext.getCurrentId()) { goToApp(); return; }
-  backToProfiles();
-});
-skipExtraordinaryButton.addEventListener("click", backToProfiles);
 shiftStepBackButton.addEventListener("click", backToProfiles);
 startShiftButton.addEventListener("click", () => { showShiftStep(); });
 
