@@ -11,6 +11,7 @@ function fakeCaregiverProfiles(validIds = ["1", "2", "3"]) {
 function row(overrides = {}) {
   return {
     id: "1",
+    scheduleMonthId: "5",
     scheduledStartAt: new Date(Date.now() - 60 * 60 * 1000),
     scheduledEndAt: new Date(Date.now() + 60 * 60 * 1000),
     scheduledDate: "2026-08-27",
@@ -227,5 +228,62 @@ describe("schedule shifts service", () => {
     const repository = { hasWorkShift: async () => false, swapProfiles: async () => null };
     const service = createScheduleShiftsService(repository, fakeCaregiverProfiles());
     await assert.rejects(service.swap("1", "2", "9", "3"), ScheduleShiftNotFoundError);
+  });
+
+  it("rejeita dividir com coveringProfileId inválido", async () => {
+    const service = createScheduleShiftsService({}, fakeCaregiverProfiles());
+    await assert.rejects(service.split("1", "abc", "9", "3"), ScheduleShiftValidationError);
+  });
+
+  it("rejeita dividir para um cuidador que não pertence à conta", async () => {
+    const service = createScheduleShiftsService({}, fakeCaregiverProfiles(["1"]));
+    await assert.rejects(service.split("1", "99", "9", "3"), ScheduleShiftValidationError);
+  });
+
+  it("lança não encontrado ao dividir um plantão inexistente", async () => {
+    const repository = { findById: async () => null };
+    const service = createScheduleShiftsService(repository, fakeCaregiverProfiles());
+    await assert.rejects(service.split("1", "2", "9", "3"), ScheduleShiftNotFoundError);
+  });
+
+  it("bloqueia divisão quando o plantão já foi iniciado", async () => {
+    const repository = { findById: async () => row(), hasWorkShift: async () => true };
+    const service = createScheduleShiftsService(repository, fakeCaregiverProfiles());
+    await assert.rejects(service.split("1", "2", "9", "3"), ScheduleShiftValidationError);
+  });
+
+  it("rejeita dividir um plantão que não tem 24 horas", async () => {
+    const repository = { findById: async () => row(), hasWorkShift: async () => false };
+    const service = createScheduleShiftsService(repository, fakeCaregiverProfiles());
+    await assert.rejects(service.split("1", "2", "9", "3"), ScheduleShiftValidationError);
+  });
+
+  it("divide o plantão em duas metades de 12h", async () => {
+    let capturedUpdate;
+    let capturedCreate;
+    const repository = {
+      findById: async () => row({
+        scheduleMonthId: "7",
+        profileId: "1",
+        scheduledStartAt: new Date("2026-08-27T06:00:00"),
+        scheduledEndAt: new Date("2026-08-28T06:00:00"),
+      }),
+      hasWorkShift: async () => false,
+      update: async (id, changes) => { capturedUpdate = { id, changes }; return true; },
+      create: async (data, userId) => { capturedCreate = { data, userId }; },
+    };
+    const service = createScheduleShiftsService(repository, fakeCaregiverProfiles());
+    await service.split("1", "2", "9", "3");
+
+    assert.equal(capturedUpdate.id, "1");
+    assert.equal(capturedUpdate.changes.profileId, "1");
+    assert.equal(capturedUpdate.changes.scheduledStartAt, "2026-08-27 06:00:00");
+    assert.equal(capturedUpdate.changes.scheduledEndAt, "2026-08-27 18:00:00");
+
+    assert.equal(capturedCreate.userId, "9");
+    assert.equal(capturedCreate.data.scheduleMonthId, "7");
+    assert.equal(capturedCreate.data.profileId, "2");
+    assert.equal(capturedCreate.data.scheduledStartAt, "2026-08-27 18:00:00");
+    assert.equal(capturedCreate.data.scheduledEndAt, "2026-08-28 06:00:00");
   });
 });
