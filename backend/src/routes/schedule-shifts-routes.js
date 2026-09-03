@@ -6,6 +6,7 @@ function createScheduleShiftsRouter(controller) {
   router.get("/", controller.listByMonth);
   router.post("/swap", controller.swap);
   router.patch("/:id", controller.update);
+  router.post("/:id/split", controller.split);
   router.delete("/:id", controller.remove);
   return router;
 }
