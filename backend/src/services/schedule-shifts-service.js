@@ -5,6 +5,15 @@ function isTime(value) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 }
 
+function pad2(value) {
+  return String(value).padStart(2, "0");
+}
+
+function formatTimestamp(date) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())} `
+    + `${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`;
+}
+
 function validateId(value, field = "id") {
   if (!/^\d+$/.test(String(value ?? "")) || value === "0") {
     throw new ScheduleShiftValidationError({ [field]: "Identificador inválido" });
@@ -117,7 +126,38 @@ function createScheduleShiftsService(repository, caregiverProfilesRepository) {
     });
   }
 
-  return Object.freeze({ findCurrentForProfile, listByMonth, remove, swap, update });
+  async function split(id, coveringProfileId, userId) {
+    validateId(id);
+    validateId(coveringProfileId, "coveringProfileId");
+    if (!(await caregiverProfilesRepository.belongsToUser(coveringProfileId, userId))) {
+      throw new ScheduleShiftValidationError({ coveringProfileId: "Cuidador inválido" });
+    }
+    const existing = await repository.findById(id, userId);
+    if (!existing) throw new ScheduleShiftNotFoundError();
+    if (await repository.hasWorkShift(id, userId)) {
+      throw new ScheduleShiftValidationError({ id: "Não é possível dividir um plantão que já foi iniciado" });
+    }
+    const start = new Date(existing.scheduledStartAt);
+    const end = new Date(existing.scheduledEndAt);
+    const durationHours = (end - start) / 3600000;
+    if (durationHours !== 24) {
+      throw new ScheduleShiftValidationError({ id: "Só é possível dividir um plantão de 24 horas" });
+    }
+    const midpoint = new Date(start.getTime() + 12 * 3600000);
+    await repository.update(id, {
+      profileId: existing.profileId,
+      scheduledStartAt: formatTimestamp(start),
+      scheduledEndAt: formatTimestamp(midpoint),
+    }, userId);
+    await repository.create({
+      scheduleMonthId: existing.scheduleMonthId,
+      scheduledStartAt: formatTimestamp(midpoint),
+      scheduledEndAt: formatTimestamp(end),
+      profileId: coveringProfileId,
+    }, userId);
+  }
+
+  return Object.freeze({ findCurrentForProfile, listByMonth, remove, split, swap, update });
 }
 
 module.exports = createScheduleShiftsService;
