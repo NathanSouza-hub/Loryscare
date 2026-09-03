@@ -20,3 +20,6 @@ Thumbs.db
 # Configuração pessoal do Claude Code
 .claude/settings.local.json
 .claude/worktrees/
+
+# Worktrees de desenvolvimento
+.worktrees/

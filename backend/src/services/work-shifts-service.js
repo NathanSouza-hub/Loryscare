@@ -47,12 +47,55 @@ function validateInput(input) {
   return { startedAt, durationHours };
 }
 
-function createWorkShiftsService(repository) {
+function createWorkShiftsService(repository, scheduleShiftsRepository) {
+  async function startFromSchedule(scheduleShiftId, userId) {
+    if (!/^\d+$/.test(String(scheduleShiftId ?? ""))) {
+      throw new WorkShiftValidationError({ scheduleShiftId: "Identificador inválido" });
+    }
+    const scheduleShift = await scheduleShiftsRepository.findById(scheduleShiftId, userId);
+    if (!scheduleShift) throw new WorkShiftValidationError({ scheduleShiftId: "Plantão programado não encontrado" });
+    if (await repository.existsForScheduleShift(scheduleShiftId, userId)) {
+      throw new WorkShiftValidationError({ scheduleShiftId: "Este plantão já foi iniciado" });
+    }
+    const now = new Date();
+    if (new Date(scheduleShift.scheduledStartAt) > now || new Date(scheduleShift.scheduledEndAt) <= now) {
+      throw new WorkShiftValidationError({ scheduleShiftId: "Este plantão programado não está no horário de agora" });
+    }
+    const durationHours = Math.round(
+      (new Date(scheduleShift.scheduledEndAt) - new Date(scheduleShift.scheduledStartAt)) / 3600000,
+    );
+    if (durationHours !== 12 && durationHours !== 24) {
+      throw new WorkShiftValidationError({
+        scheduleShiftId: "A duração deste plantão programado é inválida (12h ou 24h esperado).",
+      });
+    }
+    const scheduledEndAt = `${scheduleShift.scheduledEndDate} ${scheduleShift.scheduledEndTime}:00`;
+    const result = await repository.createExclusive({
+      userId,
+      profileId: scheduleShift.profileId,
+      startedAt: nowTimestamp(),
+      durationHours,
+      now: nowTimestamp(),
+      scheduleShiftId,
+      scheduledStartAt: `${scheduleShift.scheduledDate} ${scheduleShift.scheduledStartTime}:00`,
+      scheduledEndAt,
+      expectedEndAt: scheduledEndAt,
+    });
+    if (!result.created && String(result.shift.profileId) !== String(scheduleShift.profileId)) {
+      throw new WorkShiftValidationError({
+        scheduleShiftId: `${result.shift.profileName} já está de plantão até ${result.shift.expectedEndTime}`,
+      });
+    }
+    return { ...attachPeriod(result.shift), alreadyActive: !result.created };
+  }
+
   async function start(input, userId, profileId) {
+    const body = input ?? {};
+    if (body.scheduleShiftId) return startFromSchedule(body.scheduleShiftId, userId);
     if (!profileId) {
       throw new WorkShiftValidationError({ profileId: "Selecione um cuidador para iniciar o plantão" });
     }
-    const { startedAt, durationHours } = validateInput(input ?? {});
+    const { startedAt, durationHours } = validateInput(body);
     const result = await repository.createExclusive({
       userId, profileId, startedAt, durationHours, now: nowTimestamp(),
     });

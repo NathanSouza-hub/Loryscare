@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Escala mensal de plantões no Lory's Care." />
+    <title>Plantões | Lory's Care</title>
+    <link rel="stylesheet" href="css/styles.css?v=20260827-1" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar__header">
+          <a class="brand" href="index.html"><span class="brand__icon"></span>Lory's<span> Care</span></a>
+          <button class="sidebar-toggle-button" id="sidebar-toggle-button" type="button" aria-label="Recolher menu">☰</button>
+        </div>
+        <p class="sidebar__tagline">Cuidado que acolhe.</p>
+        <select class="patient-switcher" id="patient-switcher" aria-label="Selecionar paciente"></select>
+        <div class="sidebar-user-card" id="sidebar-user-card">
+          <div class="sidebar-user-card__avatar" id="sidebar-user-avatar"></div>
+          <div class="sidebar-user-card__info">
+            <p class="sidebar-user-card__name" id="sidebar-user-name"></p>
+            <p class="sidebar-user-card__role">Cuidador</p>
+          </div>
+        </div>
+        <nav class="sidebar__nav">
+          <a class="nav-link" href="index.html">Dashboard</a>
+          <a class="nav-link" href="pacientes.html">Paciente</a>
+          <a class="nav-link" href="sinais-vitais.html">Sinais vitais</a>
+          <a class="nav-link" href="medicamentos.html">Medicamentos</a>
+          <a class="nav-link" href="atividades.html">Atividades</a>
+          <a class="nav-link" href="anotacoes-enfermagem.html">Anotações enfermagem</a>
+          <a class="nav-link" href="agenda.html">Agenda</a>
+          <a class="nav-link nav-link--active" href="plantoes.html">Plantões</a>
+        </nav>
+        <div class="sidebar-bottom-card">
+          <span class="icon sidebar-bottom-card__icon"></span>
+          <p>Acolher é estar presente.<br />Cuidar é fazer a diferença todos os dias.</p>
+        </div>
+      </aside>
+
+      <div class="main-area">
+        <header class="topbar"><div class="container topbar__content"><p class="current-date" id="current-date"></p><div class="account-menu" id="account-menu"></div></div></header>
+
+        <main class="main-content container">
+          <section class="page-header">
+            <h1>Plantões</h1>
+            <p>Monte a escala mensal dos cuidadores e acompanhe cada plantão programado.</p>
+          </section>
+
+          <section class="history-panel" aria-labelledby="month-label">
+            <div class="history-panel__header">
+              <div><p class="eyebrow">Escala</p><h2 id="month-label">Mês</h2></div>
+              <div class="history-panel__header-actions">
+                <select id="month-select" aria-label="Mês"></select>
+                <select id="year-select" aria-label="Ano"></select>
+              </div>
+            </div>
+            <p class="form-message" id="month-message" aria-live="polite"></p>
+
+            <div id="generate-panel" hidden>
+              <h3>Gerar escala do mês</h3>
+              <form id="generate-form">
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label for="duration-select">Tipo de plantão</label>
+                    <select id="duration-select" name="durationHours" required>
+                      <option value="12">12 horas</option>
+                      <option value="24">24 horas</option>
+                    </select>
+                  </div>
+                  <div class="form-field"><label for="first-start-time">Início do 1º período</label><input id="first-start-time" name="firstStartTime" type="time" required /></div>
+                  <div class="form-field" id="second-start-field"><label for="second-start-time">Início do 2º período</label><input id="second-start-time" name="secondStartTime" type="time" /></div>
+                  <div class="form-field form-field--full">
+                    <label>Cuidadores participantes</label>
+                    <div class="weekday-options" id="caregiver-checklist"></div>
+                  </div>
+                  <div class="form-field form-field--full">
+                    <label>Ordem do revezamento</label>
+                    <ul class="reorder-list" id="reorder-list"></ul>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button class="primary-button" type="submit">Gerar escala do mês</button>
+                  <p class="form-message" id="generate-message" aria-live="polite"></p>
+                </div>
+              </form>
+            </div>
+            <div id="summary-panel" hidden>
+              <div class="history-panel__header">
+                <div><p class="eyebrow">Configuração</p><h3 id="summary-text"></h3></div>
+                <button class="secondary-button" id="delete-month-button" type="button">Excluir escala do mês</button>
+              </div>
+              <p class="form-message" id="summary-message" aria-live="polite"></p>
+            </div>
+          </section>
+
+          <section class="history-panel" id="shifts-panel" aria-labelledby="shifts-label" hidden>
+            <div class="history-panel__header"><div><p class="eyebrow">Plantões</p><h2 id="shifts-label">Escala do mês</h2></div></div>
+            <div class="table-wrapper" id="shifts-wrapper">
+              <table>
+                <thead><tr><th>Data</th><th>Início</th><th>Término</th><th>Cuidador</th><th>Turno</th><th>Status</th><th>Ações</th></tr></thead>
+                <tbody id="shifts-body"></tbody>
+              </table>
+            </div>
+            <div id="edit-shift-panel" hidden>
+              <h3>Editar plantão</h3>
+              <form id="edit-shift-form">
+                <div class="form-grid">
+                  <div class="form-field form-field--full"><label for="edit-shift-profile">Cuidador</label><select id="edit-shift-profile" name="profileId" required></select></div>
+                  <div class="form-field"><label for="edit-shift-date">Data</label><input id="edit-shift-date" name="scheduledDate" type="date" required /></div>
+                  <div class="form-field"><label for="edit-shift-start">Início</label><input id="edit-shift-start" name="scheduledStartTime" type="time" required /></div>
+                  <div class="form-field"><label for="edit-shift-end-date">Data de término</label><input id="edit-shift-end-date" name="scheduledEndDate" type="date" required /></div>
+                  <div class="form-field"><label for="edit-shift-end">Término</label><input id="edit-shift-end" name="scheduledEndTime" type="time" required /></div>
+                </div>
+                <div class="form-actions">
+                  <button class="primary-button" type="submit">Salvar alterações</button>
+                  <button class="secondary-button" type="button" id="cancel-edit-shift-button">Cancelar</button>
+                  <p class="form-message" id="edit-shift-message" aria-live="polite"></p>
+                </div>
+              </form>
+            </div>
+          </section>
+        </main>
+        <footer><div class="container"><p><span class="footer-heart"></span>Lory's Care — apoio para o cuidado cotidiano.</p></div></footer>
+      </div>
+    </div>
+    <script src="js/config.js"></script>
+    <script src="js/auth-context.js"></script>
+    <script src="js/caregiver-profiles-repository.js?v=20260824-1"></script>
+    <script src="js/caregiver-context.js"></script>
+    <script src="js/icons.js"></script>
+    <script src="js/ui-icons.js?v=20260821-1"></script>
+    <script src="js/account-menu.js"></script>
+    <script src="js/sidebar-toggle.js"></script>
+    <script src="js/patient-context.js"></script>
+    <script src="js/live-updates.js"></script>
+    <script src="js/schedule-repository.js"></script>
+    <script src="js/plantoes.js?v=20260827-1"></script>
+  </body>
+</html>

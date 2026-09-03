@@ -31,10 +31,18 @@ async function createExclusive(shift) {
       return { created: false, shift: current.rows[0] };
     }
     const result = await client.query(
-      `INSERT INTO work_shifts (user_id, profile_id, started_at, duration_hours, expected_end_at)
-       VALUES ($1, $2, $3::timestamp, $4::smallint, $3::timestamp + ($4::text || ' hours')::interval)
+      `INSERT INTO work_shifts (user_id, profile_id, started_at, duration_hours, expected_end_at, schedule_shift_id, scheduled_start_at, scheduled_end_at)
+       VALUES (
+         $1, $2, $3::timestamp, $4::smallint,
+         COALESCE($8::timestamp, $3::timestamp + ($4::text || ' hours')::interval),
+         $5, $6::timestamp, $7::timestamp
+       )
        RETURNING ${SHIFT_FIELDS}`,
-      [shift.userId, shift.profileId, shift.startedAt, shift.durationHours],
+      [
+        shift.userId, shift.profileId, shift.startedAt, shift.durationHours,
+        shift.scheduleShiftId ?? null, shift.scheduledStartAt ?? null, shift.scheduledEndAt ?? null,
+        shift.expectedEndAt ?? null,
+      ],
     );
     await client.query("COMMIT");
     return { created: true, shift: result.rows[0] };
@@ -44,6 +52,16 @@ async function createExclusive(shift) {
   } finally {
     client.release();
   }
+}
+
+async function existsForScheduleShift(scheduleShiftId, userId) {
+  const result = await pool.query(
+    `SELECT 1 FROM work_shifts ws
+     JOIN schedule_shifts ss ON ss.id = ws.schedule_shift_id
+     WHERE ws.schedule_shift_id = $1 AND ss.user_id = $2`,
+    [scheduleShiftId, userId],
+  );
+  return result.rowCount > 0;
 }
 
 async function findCurrent(userId, now) {
@@ -76,4 +94,4 @@ async function findCovering(userId, at) {
   return result.rows[0] ?? null;
 }
 
-module.exports = Object.freeze({ createExclusive, findCovering, findCurrent });
+module.exports = Object.freeze({ createExclusive, existsForScheduleShift, findCovering, findCurrent });

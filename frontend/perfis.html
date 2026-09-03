@@ -44,12 +44,28 @@
       <div>
         <a class="brand" href="index.html"><span class="brand__icon"></span>Lory's<span> Care</span></a>
         <h1 id="shift-step-title">Iniciar plantão?</h1>
-        <p>Ninguém está de plantão agora. Se você está começando a cuidar, registre o início — isso garante que só você possa lançar anotações no seu horário.</p>
+        <p id="shift-step-description">Ninguém está de plantão agora. Se você está começando a cuidar, registre o início — isso garante que só você possa lançar anotações no seu horário.</p>
       </div>
       <section class="form-panel" style="max-width: 360px; width: 100%;">
-        <form id="shift-form">
+        <div class="form-field form-field--full"><label for="shift-profile">Cuidador</label><select id="shift-profile" required><option value="">Selecione</option></select></div>
+
+        <p><button class="secondary-button" type="button" id="shift-step-back-button">Agora não</button></p>
+
+        <div id="scheduled-shift-card" hidden>
+          <p class="eyebrow">Seu plantão</p>
+          <p id="scheduled-shift-summary" style="font-weight: 600; margin-bottom: 16px;"></p>
+          <div class="form-actions">
+            <button class="primary-button" type="button" id="start-scheduled-button">Iniciar plantão</button>
+          </div>
+          <p><button class="secondary-button" type="button" id="show-extraordinary-button">Iniciar plantão extraordinário</button></p>
+        </div>
+
+        <div id="no-scheduled-shift-message" hidden>
+          <p class="form-message">Não encontramos um plantão programado para você neste horário.</p>
+        </div>
+
+        <form id="shift-form" hidden>
           <div class="form-grid">
-            <div class="form-field form-field--full"><label for="shift-profile">Cuidador</label><select id="shift-profile" name="profileId" required><option value="">Selecione</option></select></div>
             <div class="form-field"><label for="shift-date">Início</label><input id="shift-date" name="startedDate" type="date" required /></div>
             <div class="form-field"><label for="shift-time">Hora</label><input id="shift-time" name="startedTime" type="time" required /></div>
             <div class="form-field form-field--full">
@@ -61,11 +77,10 @@
             </div>
           </div>
           <div class="form-actions">
-            <button class="primary-button" type="submit">Iniciar plantão</button>
-            <button class="secondary-button" type="button" id="skip-shift-button">Agora não</button>
-            <p class="form-message" id="shift-message" aria-live="polite"></p>
+            <button class="primary-button" type="submit">Iniciar plantão extraordinário</button>
           </div>
         </form>
+        <p class="form-message" id="shift-message" aria-live="polite"></p>
       </section>
     </div>
 
@@ -75,6 +90,7 @@
     <script src="js/caregiver-profiles-repository.js?v=20260824-1"></script>
     <script src="js/caregiver-context.js"></script>
     <script src="js/work-shifts-repository.js?v=20260821-1"></script>
+    <script src="js/schedule-repository.js"></script>
     <script src="js/perfis.js?v=20260824-1"></script>
   </body>
 </html>

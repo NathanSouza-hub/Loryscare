@@ -16,7 +16,7 @@ const shiftStep = document.querySelector("#shift-step");
 const shiftStepTitle = document.querySelector("#shift-step-title");
 const shiftForm = document.querySelector("#shift-form");
 const shiftMessage = document.querySelector("#shift-message");
-const skipShiftButton = document.querySelector("#skip-shift-button");
+const shiftStepBackButton = document.querySelector("#shift-step-back-button");
 const startShiftButton = document.querySelector("#start-shift-button");
 let caregiverProfiles = [];
 let pendingProfile = null;
@@ -40,16 +40,6 @@ function localTime() {
 
 function goToApp() {
   location.href = "index.html";
-}
-
-function showShiftStep(profile = null) {
-  shiftStepTitle.textContent = profile ? `Iniciar plantão de ${profile.name}?` : "Iniciar plantão";
-  shiftForm.elements.profileId.value = profile?.id || "";
-  shiftForm.elements.startedDate.value = localDate();
-  shiftForm.elements.startedTime.value = localTime();
-  shiftMessage.textContent = "";
-  profileStep.hidden = true;
-  shiftStep.hidden = false;
 }
 
 function showPinStep(profile) {
@@ -128,15 +118,93 @@ function profileButton(profile) {
   return button;
 }
 
+const scheduledShiftCard = document.querySelector("#scheduled-shift-card");
+const scheduledShiftSummary = document.querySelector("#scheduled-shift-summary");
+const noScheduledShiftMessage = document.querySelector("#no-scheduled-shift-message");
+const startScheduledButton = document.querySelector("#start-scheduled-button");
+const showExtraordinaryButton = document.querySelector("#show-extraordinary-button");
+let currentScheduledShift = null;
+
+function periodFromHour(hour) {
+  if (hour >= 6 && hour < 12) return "Manhã";
+  if (hour >= 12 && hour < 18) return "Tarde";
+  if (hour >= 18) return "Noite";
+  return "Madrugada";
+}
+
+async function showShiftStep() {
+  shiftStepTitle.textContent = "Iniciar plantão";
+  shiftMessage.textContent = "";
+  shiftForm.hidden = true;
+  scheduledShiftCard.hidden = true;
+  noScheduledShiftMessage.hidden = true;
+  profileStep.hidden = true;
+  shiftStep.hidden = false;
+  await refreshScheduleLookup();
+}
+
+async function refreshScheduleLookup() {
+  const profileId = document.querySelector("#shift-profile").value;
+  currentScheduledShift = null;
+  shiftMessage.textContent = "";
+  scheduledShiftCard.hidden = true;
+  noScheduledShiftMessage.hidden = true;
+  shiftForm.hidden = true;
+  if (!profileId) return;
+  try {
+    currentScheduledShift = await ScheduleRepository.getCurrentShift(profileId);
+  } catch (error) {
+    shiftMessage.textContent = error.message;
+    return;
+  }
+  if (currentScheduledShift && !currentScheduledShift.alreadyStarted) {
+    const durationHours = Math.round(
+      (new Date(`${currentScheduledShift.scheduledEndDate}T${currentScheduledShift.scheduledEndTime}`)
+        - new Date(`${currentScheduledShift.scheduledDate}T${currentScheduledShift.scheduledStartTime}`)) / 3600000,
+    );
+    scheduledShiftSummary.textContent = `Hoje — ${currentScheduledShift.scheduledStartTime} às ${currentScheduledShift.scheduledEndTime} — ${durationHours} horas`;
+    scheduledShiftCard.hidden = false;
+  } else if (currentScheduledShift && currentScheduledShift.alreadyStarted) {
+    shiftMessage.textContent = "Este plantão já foi iniciado.";
+  } else {
+    noScheduledShiftMessage.hidden = false;
+    showExtraordinaryFormFields();
+  }
+}
+
+function showExtraordinaryFormFields() {
+  scheduledShiftCard.hidden = true;
+  shiftForm.hidden = false;
+  shiftForm.elements.startedDate.value = localDate();
+  shiftForm.elements.startedTime.value = localTime();
+}
+
+document.querySelector("#shift-profile").addEventListener("change", refreshScheduleLookup);
+showExtraordinaryButton.addEventListener("click", showExtraordinaryFormFields);
+
+startScheduledButton.addEventListener("click", async () => {
+  const profileId = document.querySelector("#shift-profile").value;
+  const profile = caregiverProfiles.find((item) => String(item.id) === String(profileId));
+  if (!profile || !currentScheduledShift) return;
+  shiftMessage.textContent = "Salvando...";
+  try {
+    CaregiverContext.setCurrent(profile);
+    await WorkShiftsRepository.start({ scheduleShiftId: currentScheduledShift.id });
+    goToApp();
+  } catch (error) {
+    shiftMessage.textContent = error.message;
+  }
+});
+
 shiftForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const profileId = document.querySelector("#shift-profile").value;
+  const profile = caregiverProfiles.find((item) => String(item.id) === String(profileId));
+  if (!profile) { shiftMessage.textContent = "Selecione um cuidador"; return; }
   shiftMessage.textContent = "Salvando...";
   try {
     const data = Object.fromEntries(new FormData(shiftForm).entries());
-    const profile = caregiverProfiles.find((item) => String(item.id) === String(data.profileId));
-    if (!profile) throw new Error("Selecione um cuidador");
     CaregiverContext.setCurrent(profile);
-    delete data.profileId;
     await WorkShiftsRepository.start(data);
     goToApp();
   } catch (error) {
@@ -144,14 +212,12 @@ shiftForm.addEventListener("submit", async (event) => {
   }
 });
 
-skipShiftButton.addEventListener("click", () => {
-  if (CaregiverContext.getCurrentId()) { goToApp(); return; }
+function backToProfiles() {
   shiftStep.hidden = true;
   profileStep.hidden = false;
-});
-startShiftButton.addEventListener("click", () => {
-  showShiftStep();
-});
+}
+shiftStepBackButton.addEventListener("click", backToProfiles);
+startShiftButton.addEventListener("click", () => { showShiftStep(); });
 
 async function loadProfiles() {
   try {
@@ -159,8 +225,9 @@ async function loadProfiles() {
     caregiverProfiles = profiles;
     profileGrid.replaceChildren();
     emptyProfiles.hidden = profiles.length > 0;
-    shiftForm.elements.profileId.replaceChildren(new Option("Selecione", ""));
-    profiles.forEach((profile) => shiftForm.elements.profileId.add(new Option(profile.name, profile.id)));
+    const shiftProfileSelect = document.querySelector("#shift-profile");
+    shiftProfileSelect.replaceChildren(new Option("Selecione", ""));
+    profiles.forEach((profile) => shiftProfileSelect.add(new Option(profile.name, profile.id)));
     profiles.forEach((profile) => profileGrid.append(profileButton(profile)));
   } catch (error) {
     message.textContent = error.message;
