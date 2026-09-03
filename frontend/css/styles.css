@@ -1894,3 +1894,105 @@ tbody tr:last-child td {
   background: var(--danger-light);
   color: var(--danger);
 }
+
+.calendar__day-pills {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.calendar__day-pill {
+  border-radius: 6px;
+  padding: 2px 6px;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(31, 41, 55, 0.45);
+  z-index: 100;
+}
+
+.modal-box {
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  padding: 24px;
+  overflow-y: auto;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.modal-box__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.modal-box__header h3 {
+  margin: 0;
+}
+
+.day-shift-card {
+  padding: 14px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.day-shift-card:last-child {
+  margin-bottom: 0;
+}
+
+.day-shift-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.day-shift-card__dot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.day-shift-card__name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.day-shift-card__time {
+  margin: 0 0 10px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.day-shift-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.day-shift-card__inline-form {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
