@@ -14,17 +14,24 @@ const reorderList = document.querySelector("#reorder-list");
 const summaryText = document.querySelector("#summary-text");
 const summaryMessage = document.querySelector("#summary-message");
 const deleteMonthButton = document.querySelector("#delete-month-button");
-const editShiftPanel = document.querySelector("#edit-shift-panel");
-const editShiftForm = document.querySelector("#edit-shift-form");
-const editShiftMessage = document.querySelector("#edit-shift-message");
-const cancelEditShiftButton = document.querySelector("#cancel-edit-shift-button");
+const calendarGrid = document.querySelector("#shifts-calendar-grid");
+const swapPendingMessage = document.querySelector("#swap-pending-message");
+const dayModalOverlay = document.querySelector("#day-modal-overlay");
+const dayModalTitle = document.querySelector("#day-modal-title");
+const dayModalMessage = document.querySelector("#day-modal-message");
+const dayModalBody = document.querySelector("#day-modal-body");
+const closeDayModalButton = document.querySelector("#close-day-modal-button");
+
 let editingShiftId = null;
+let splittingShiftId = null;
 let pendingSwapId = null;
+let selectedDate = null;
 
 const MONTH_NAMES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ];
+const WEEKDAY_ORDER = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 const STATUS_BADGE_CLASS = {
   "Programado": "status-badge--scheduled",
@@ -40,15 +47,32 @@ function periodFromHour(hour) {
   return "Madrugada";
 }
 
+function pad2(value) {
+  return String(value).padStart(2, "0");
+}
+
+function dateKey(year, monthIndex0, day) {
+  return `${year}-${pad2(monthIndex0 + 1)}-${pad2(day)}`;
+}
+
+function daysInMonth(year, monthIndex0) {
+  return new Date(year, monthIndex0 + 1, 0).getDate();
+}
+
 function formatDateLabel(isoDate) {
   const [year, month, day] = isoDate.split("-");
   return `${day}/${month}`;
 }
 
+function shiftDurationHours(shift) {
+  const start = new Date(`${shift.scheduledDate}T${shift.scheduledStartTime}:00`);
+  const end = new Date(`${shift.scheduledEndDate}T${shift.scheduledEndTime}:00`);
+  return (end - start) / 3600000;
+}
+
 let allCaregivers = [];
 let orderedCaregiverIds = [];
 let currentScheduleMonth = null;
-const shiftsBody = document.querySelector("#shifts-body");
 let currentShifts = [];
 
 function populateMonthYearSelects() {
@@ -125,89 +149,311 @@ reorderList.addEventListener("drop", (event) => {
   moveCaregiver(from, to);
 });
 
-function shiftRow(shift) {
-  const row = document.createElement("tr");
-  const cell = (text) => { const td = document.createElement("td"); td.textContent = text; return td; };
+function renderCalendar() {
+  calendarGrid.replaceChildren();
+  const year = Number(yearSelect.value);
+  const monthIndex0 = Number(monthSelect.value) - 1;
+  const firstWeekday = new Date(year, monthIndex0, 1).getDay();
+  const totalDays = daysInMonth(year, monthIndex0);
+  const today = dateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
 
+  for (let i = 0; i < firstWeekday; i += 1) {
+    const filler = document.createElement("div");
+    filler.className = "calendar__day calendar__day--muted";
+    calendarGrid.append(filler);
+  }
+
+  for (let day = 1; day <= totalDays; day += 1) {
+    const key = dateKey(year, monthIndex0, day);
+    const dayButton = document.createElement("button");
+    dayButton.type = "button";
+    dayButton.className = "calendar__day";
+    if (key === today) dayButton.classList.add("calendar__day--today");
+    if (key === selectedDate) dayButton.classList.add("calendar__day--selected");
+    dayButton.dataset.date = key;
+
+    const number = document.createElement("span");
+    number.className = "calendar__day-number";
+    number.textContent = String(day);
+    dayButton.append(number);
+
+    const dayShifts = currentShifts.filter((shift) => shift.scheduledDate === key);
+    if (dayShifts.length) {
+      const pills = document.createElement("div");
+      pills.className = "calendar__day-pills";
+      dayShifts.forEach((shift) => {
+        const pill = document.createElement("span");
+        pill.className = "calendar__day-pill";
+        pill.style.background = shift.profileColor || "#64748b";
+        pill.textContent = shift.profileName;
+        pills.append(pill);
+      });
+      dayButton.append(pills);
+    }
+
+    dayButton.addEventListener("click", () => openDayModal(key));
+    calendarGrid.append(dayButton);
+  }
+}
+
+function swapButtonLabel(shift) {
+  if (pendingSwapId === shift.id) return "Cancelar troca";
+  if (pendingSwapId) return "Trocar com este";
+  return "Trocar";
+}
+
+function shiftCard(shift) {
+  const card = document.createElement("div");
+  card.className = "day-shift-card";
+
+  const header = document.createElement("div");
+  header.className = "day-shift-card__header";
+  const dot = document.createElement("span");
+  dot.className = "day-shift-card__dot";
+  dot.style.background = shift.profileColor || "#64748b";
+  const name = document.createElement("span");
+  name.className = "day-shift-card__name";
+  name.textContent = shift.profileName;
   const badge = document.createElement("span");
   badge.className = `status-badge ${STATUS_BADGE_CLASS[shift.status] || ""}`;
   badge.textContent = shift.status;
-  const statusCell = document.createElement("td");
-  statusCell.append(badge);
+  header.append(dot, name, badge);
 
-  const turnCell = cell(`${currentScheduleMonth.durationHours}h · ${periodFromHour(Number(shift.scheduledStartTime.slice(0, 2)))}`);
+  const time = document.createElement("p");
+  time.className = "day-shift-card__time";
+  const durationHours = shiftDurationHours(shift);
+  time.textContent = `${shift.scheduledStartTime} – ${shift.scheduledEndTime} · ${durationHours}h · ${periodFromHour(Number(shift.scheduledStartTime.slice(0, 2)))}`;
 
-  const actionsCell = document.createElement("td");
+  const actions = document.createElement("div");
+  actions.className = "day-shift-card__actions";
+
   const editButton = document.createElement("button");
   editButton.type = "button";
-  editButton.className = "table-action table-action--icon";
-  editButton.innerHTML = icon("pencil");
-  editButton.title = "Editar";
-  editButton.addEventListener("click", () => openEditShift(shift));
+  editButton.className = "table-action";
+  editButton.textContent = "Editar";
+  editButton.addEventListener("click", () => {
+    splittingShiftId = null;
+    editingShiftId = editingShiftId === shift.id ? null : shift.id;
+    renderDayModal();
+  });
+
   const deleteButton = document.createElement("button");
   deleteButton.type = "button";
-  deleteButton.className = "table-action table-action--icon table-action--danger";
-  deleteButton.innerHTML = icon("trash");
-  deleteButton.title = "Excluir";
+  deleteButton.className = "table-action table-action--danger";
+  deleteButton.textContent = "Excluir";
   deleteButton.addEventListener("click", () => deleteShiftRow(shift));
+
   const swapButton = document.createElement("button");
   swapButton.type = "button";
   swapButton.className = "table-action";
-  swapButton.textContent = pendingSwapId === shift.id
-    ? "Cancelar troca"
-    : pendingSwapId
-      ? "Trocar com este"
-      : "Trocar";
+  swapButton.textContent = swapButtonLabel(shift);
   swapButton.addEventListener("click", () => handleSwapClick(shift));
-  actionsCell.append(editButton, deleteButton, swapButton);
 
-  row.append(
-    cell(formatDateLabel(shift.scheduledDate)),
-    cell(shift.scheduledStartTime),
-    cell(shift.scheduledEndTime),
-    cell(shift.profileName),
-    turnCell,
-    statusCell,
-    actionsCell,
-  );
-  return row;
-}
+  actions.append(editButton, deleteButton, swapButton);
 
-async function loadShifts() {
-  const year = Number(yearSelect.value);
-  const month = Number(monthSelect.value);
-  currentShifts = await ScheduleRepository.listShifts(year, month);
-  shiftsBody.replaceChildren();
-  currentShifts.forEach((shift) => shiftsBody.append(shiftRow(shift)));
-}
-
-function openEditShift(shift) {
-  editingShiftId = shift.id;
-  editShiftForm.elements.profileId.replaceChildren();
-  allCaregivers.forEach((caregiver) => editShiftForm.elements.profileId.add(new Option(caregiver.name, caregiver.id)));
-  editShiftForm.elements.profileId.value = shift.profileId;
-  editShiftForm.elements.scheduledDate.value = shift.scheduledDate;
-  editShiftForm.elements.scheduledStartTime.value = shift.scheduledStartTime;
-  editShiftForm.elements.scheduledEndDate.value = shift.scheduledEndDate;
-  editShiftForm.elements.scheduledEndTime.value = shift.scheduledEndTime;
-  editShiftMessage.textContent = "";
-  editShiftPanel.hidden = false;
-}
-
-cancelEditShiftButton.addEventListener("click", () => { editShiftPanel.hidden = true; editingShiftId = null; });
-
-editShiftForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  editShiftMessage.textContent = "Salvando...";
-  try {
-    const data = Object.fromEntries(new FormData(editShiftForm).entries());
-    await ScheduleRepository.updateShift(editingShiftId, data);
-    editShiftPanel.hidden = true;
-    editingShiftId = null;
-    await loadShifts();
-  } catch (error) {
-    editShiftMessage.textContent = error.message;
+  if (durationHours === 24 && !shift.workShiftId) {
+    const splitButton = document.createElement("button");
+    splitButton.type = "button";
+    splitButton.className = "table-action";
+    splitButton.textContent = "Dividir em 12h + 12h";
+    splitButton.addEventListener("click", () => {
+      editingShiftId = null;
+      splittingShiftId = splittingShiftId === shift.id ? null : shift.id;
+      renderDayModal();
+    });
+    actions.append(splitButton);
   }
+
+  card.append(header, time, actions);
+
+  if (editingShiftId === shift.id) card.append(editShiftForm(shift));
+  if (splittingShiftId === shift.id) card.append(splitShiftForm(shift));
+
+  return card;
+}
+
+function editShiftForm(shift) {
+  const wrapper = document.createElement("form");
+  wrapper.className = "day-shift-card__inline-form";
+
+  const grid = document.createElement("div");
+  grid.className = "form-grid";
+
+  const profileField = document.createElement("div");
+  profileField.className = "form-field form-field--full";
+  const profileLabel = document.createElement("label");
+  profileLabel.textContent = "Cuidador";
+  const profileSelect = document.createElement("select");
+  profileSelect.name = "profileId";
+  profileSelect.required = true;
+  allCaregivers.forEach((caregiver) => profileSelect.add(new Option(caregiver.name, caregiver.id)));
+  profileSelect.value = shift.profileId;
+  profileField.append(profileLabel, profileSelect);
+
+  const dateField = document.createElement("div");
+  dateField.className = "form-field";
+  const dateLabel = document.createElement("label");
+  dateLabel.textContent = "Data";
+  const dateInput = document.createElement("input");
+  dateInput.type = "date";
+  dateInput.name = "scheduledDate";
+  dateInput.required = true;
+  dateInput.value = shift.scheduledDate;
+  dateField.append(dateLabel, dateInput);
+
+  const startField = document.createElement("div");
+  startField.className = "form-field";
+  const startLabel = document.createElement("label");
+  startLabel.textContent = "Início";
+  const startInput = document.createElement("input");
+  startInput.type = "time";
+  startInput.name = "scheduledStartTime";
+  startInput.required = true;
+  startInput.value = shift.scheduledStartTime;
+  startField.append(startLabel, startInput);
+
+  const endDateField = document.createElement("div");
+  endDateField.className = "form-field";
+  const endDateLabel = document.createElement("label");
+  endDateLabel.textContent = "Data de término";
+  const endDateInput = document.createElement("input");
+  endDateInput.type = "date";
+  endDateInput.name = "scheduledEndDate";
+  endDateInput.required = true;
+  endDateInput.value = shift.scheduledEndDate;
+  endDateField.append(endDateLabel, endDateInput);
+
+  const endField = document.createElement("div");
+  endField.className = "form-field";
+  const endLabel = document.createElement("label");
+  endLabel.textContent = "Término";
+  const endInput = document.createElement("input");
+  endInput.type = "time";
+  endInput.name = "scheduledEndTime";
+  endInput.required = true;
+  endInput.value = shift.scheduledEndTime;
+  endField.append(endLabel, endInput);
+
+  grid.append(profileField, dateField, startField, endDateField, endField);
+
+  const actions = document.createElement("div");
+  actions.className = "form-actions";
+  const saveButton = document.createElement("button");
+  saveButton.className = "primary-button";
+  saveButton.type = "submit";
+  saveButton.textContent = "Salvar alterações";
+  const cancelButton = document.createElement("button");
+  cancelButton.className = "secondary-button";
+  cancelButton.type = "button";
+  cancelButton.textContent = "Cancelar";
+  cancelButton.addEventListener("click", () => { editingShiftId = null; renderDayModal(); });
+  const message = document.createElement("p");
+  message.className = "form-message";
+
+  actions.append(saveButton, cancelButton, message);
+  wrapper.append(grid, actions);
+
+  wrapper.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    message.textContent = "Salvando...";
+    try {
+      const data = Object.fromEntries(new FormData(wrapper).entries());
+      await ScheduleRepository.updateShift(shift.id, data);
+      editingShiftId = null;
+      await loadShifts();
+    } catch (error) {
+      message.textContent = error.message;
+    }
+  });
+
+  return wrapper;
+}
+
+function splitShiftForm(shift) {
+  const wrapper = document.createElement("form");
+  wrapper.className = "day-shift-card__inline-form";
+
+  const grid = document.createElement("div");
+  grid.className = "form-grid";
+  const field = document.createElement("div");
+  field.className = "form-field form-field--full";
+  const label = document.createElement("label");
+  label.textContent = "Quem cobre as últimas 12h";
+  const select = document.createElement("select");
+  select.name = "coveringProfileId";
+  select.required = true;
+  allCaregivers.forEach((caregiver) => select.add(new Option(caregiver.name, caregiver.id)));
+  field.append(label, select);
+  grid.append(field);
+
+  const actions = document.createElement("div");
+  actions.className = "form-actions";
+  const confirmButton = document.createElement("button");
+  confirmButton.className = "primary-button";
+  confirmButton.type = "submit";
+  confirmButton.textContent = "Confirmar divisão";
+  const cancelButton = document.createElement("button");
+  cancelButton.className = "secondary-button";
+  cancelButton.type = "button";
+  cancelButton.textContent = "Cancelar";
+  cancelButton.addEventListener("click", () => { splittingShiftId = null; renderDayModal(); });
+  const message = document.createElement("p");
+  message.className = "form-message";
+
+  actions.append(confirmButton, cancelButton, message);
+  wrapper.append(grid, actions);
+
+  wrapper.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    message.textContent = "Dividindo...";
+    try {
+      await ScheduleRepository.splitShift(shift.id, select.value);
+      splittingShiftId = null;
+      await loadShifts();
+    } catch (error) {
+      message.textContent = error.message;
+    }
+  });
+
+  return wrapper;
+}
+
+function renderDayModal() {
+  if (!selectedDate) return;
+  const dayShifts = currentShifts.filter((shift) => shift.scheduledDate === selectedDate);
+  dayModalTitle.textContent = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(new Date(`${selectedDate}T00:00:00`));
+  dayModalMessage.textContent = "";
+  dayModalBody.replaceChildren();
+  if (!dayShifts.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty-history";
+    empty.textContent = "Nenhum plantão programado neste dia.";
+    dayModalBody.append(empty);
+  } else {
+    dayShifts.forEach((shift) => dayModalBody.append(shiftCard(shift)));
+  }
+  dayModalOverlay.hidden = false;
+}
+
+function openDayModal(key) {
+  selectedDate = key;
+  editingShiftId = null;
+  splittingShiftId = null;
+  renderCalendar();
+  renderDayModal();
+}
+
+function closeDayModal() {
+  dayModalOverlay.hidden = true;
+  selectedDate = null;
+  editingShiftId = null;
+  splittingShiftId = null;
+  renderCalendar();
+}
+
+closeDayModalButton.addEventListener("click", closeDayModal);
+dayModalOverlay.addEventListener("click", (event) => {
+  if (event.target === dayModalOverlay) closeDayModal();
 });
 
 async function deleteShiftRow(shift) {
@@ -216,8 +462,21 @@ async function deleteShiftRow(shift) {
     await ScheduleRepository.deleteShift(shift.id);
     await loadShifts();
   } catch (error) {
-    monthMessage.textContent = error.message;
+    dayModalMessage.textContent = error.message;
   }
+}
+
+function updateSwapPendingMessage() {
+  swapPendingMessage.hidden = !pendingSwapId;
+  if (!pendingSwapId) return;
+  swapPendingMessage.replaceChildren();
+  swapPendingMessage.append(document.createTextNode("Troca pendente — clique em outro plantão para concluir. "));
+  const cancelLink = document.createElement("button");
+  cancelLink.type = "button";
+  cancelLink.className = "table-action";
+  cancelLink.textContent = "Cancelar troca";
+  cancelLink.addEventListener("click", async () => { pendingSwapId = null; await loadShifts(); });
+  swapPendingMessage.append(cancelLink);
 }
 
 async function handleSwapClick(shift) {
@@ -237,9 +496,18 @@ async function handleSwapClick(shift) {
     await ScheduleRepository.swapShifts(otherId, shift.id);
     await loadShifts();
   } catch (error) {
-    monthMessage.textContent = error.message;
+    dayModalMessage.textContent = error.message;
     await loadShifts();
   }
+}
+
+async function loadShifts() {
+  const year = Number(yearSelect.value);
+  const month = Number(monthSelect.value);
+  currentShifts = await ScheduleRepository.listShifts(year, month);
+  updateSwapPendingMessage();
+  renderCalendar();
+  renderDayModal();
 }
 
 function renderCaregiverChecklist() {
@@ -302,12 +570,11 @@ deleteMonthButton.addEventListener("click", async () => {
 
 async function loadMonth() {
   pendingSwapId = null;
-  editShiftPanel.hidden = true;
-  editingShiftId = null;
+  closeDayModal();
   const year = Number(yearSelect.value);
   const month = Number(monthSelect.value);
   monthLabel.textContent = `${MONTH_NAMES[month - 1]} / ${year}`;
-  monthMessage.textContent = "Carregando...";
+  monthMessage.textContent = "";
   generatePanel.hidden = true;
   summaryPanel.hidden = true;
   shiftsPanel.hidden = true;

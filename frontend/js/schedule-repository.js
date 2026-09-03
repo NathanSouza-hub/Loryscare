@@ -40,8 +40,11 @@ const ScheduleRepository = (() => {
   async function swapShifts(shiftIdA, shiftIdB) {
     await request(`${SHIFTS_URL}/swap`, { method: "POST", body: JSON.stringify({ shiftIdA, shiftIdB }) });
   }
+  async function splitShift(id, coveringProfileId) {
+    await request(`${SHIFTS_URL}/${id}/split`, { method: "POST", body: JSON.stringify({ coveringProfileId }) });
+  }
 
   return Object.freeze({
-    deleteMonth, deleteShift, generateMonth, getCurrentShift, getMonth, listShifts, swapShifts, updateShift,
+    deleteMonth, deleteShift, generateMonth, getCurrentShift, getMonth, listShifts, splitShift, swapShifts, updateShift,
   });
 })();

@@ -12,6 +12,7 @@ const SHIFT_FIELDS = `
   ss.original_profile_id AS "originalProfileId",
   ss.profile_id AS "profileId",
   cp.name AS "profileName",
+  cp.avatar_color AS "profileColor",
   ws.id AS "workShiftId",
   ws.ended_at AS "workShiftEndedAt"
 `;
@@ -54,6 +55,15 @@ async function findCurrentForProfile(userId, profileId, now) {
     [userId, profileId, now],
   );
   return result.rows[0] ?? null;
+}
+
+async function create(data, userId) {
+  const result = await pool.query(
+    `INSERT INTO schedule_shifts (schedule_month_id, user_id, scheduled_start_at, scheduled_end_at, original_profile_id, profile_id)
+     VALUES ($1, $2, $3::timestamp, $4::timestamp, $5, $5) RETURNING id`,
+    [data.scheduleMonthId, userId, data.scheduledStartAt, data.scheduledEndAt, data.profileId],
+  );
+  return result.rows[0].id;
 }
 
 async function update(id, changes, userId) {
@@ -128,5 +138,5 @@ async function recordSwap({ scheduleShiftId, previousProfileId, newProfileId, ch
 }
 
 module.exports = Object.freeze({
-  findById, findCurrentForProfile, hasWorkShift, listByMonth, recordSwap, remove, swapProfiles, update,
+  create, findById, findCurrentForProfile, hasWorkShift, listByMonth, recordSwap, remove, swapProfiles, update,
 });

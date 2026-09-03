@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Escala mensal de plantões no Lory's Care." />
     <title>Plantões | Lory's Care</title>
-    <link rel="stylesheet" href="css/styles.css?v=20260827-1" />
+    <link rel="stylesheet" href="css/styles.css?v=20260903-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -97,31 +97,25 @@
 
           <section class="history-panel" id="shifts-panel" aria-labelledby="shifts-label" hidden>
             <div class="history-panel__header"><div><p class="eyebrow">Plantões</p><h2 id="shifts-label">Escala do mês</h2></div></div>
-            <div class="table-wrapper" id="shifts-wrapper">
-              <table>
-                <thead><tr><th>Data</th><th>Início</th><th>Término</th><th>Cuidador</th><th>Turno</th><th>Status</th><th>Ações</th></tr></thead>
-                <tbody id="shifts-body"></tbody>
-              </table>
+            <p class="form-message" id="swap-pending-message" aria-live="polite" hidden></p>
+            <div class="calendar__grid calendar__grid--weekdays">
+              <span class="calendar__weekday">Dom</span><span class="calendar__weekday">Seg</span><span class="calendar__weekday">Ter</span>
+              <span class="calendar__weekday">Qua</span><span class="calendar__weekday">Qui</span><span class="calendar__weekday">Sex</span><span class="calendar__weekday">Sáb</span>
             </div>
-            <div id="edit-shift-panel" hidden>
-              <h3>Editar plantão</h3>
-              <form id="edit-shift-form">
-                <div class="form-grid">
-                  <div class="form-field form-field--full"><label for="edit-shift-profile">Cuidador</label><select id="edit-shift-profile" name="profileId" required></select></div>
-                  <div class="form-field"><label for="edit-shift-date">Data</label><input id="edit-shift-date" name="scheduledDate" type="date" required /></div>
-                  <div class="form-field"><label for="edit-shift-start">Início</label><input id="edit-shift-start" name="scheduledStartTime" type="time" required /></div>
-                  <div class="form-field"><label for="edit-shift-end-date">Data de término</label><input id="edit-shift-end-date" name="scheduledEndDate" type="date" required /></div>
-                  <div class="form-field"><label for="edit-shift-end">Término</label><input id="edit-shift-end" name="scheduledEndTime" type="time" required /></div>
-                </div>
-                <div class="form-actions">
-                  <button class="primary-button" type="submit">Salvar alterações</button>
-                  <button class="secondary-button" type="button" id="cancel-edit-shift-button">Cancelar</button>
-                  <p class="form-message" id="edit-shift-message" aria-live="polite"></p>
-                </div>
-              </form>
-            </div>
+            <div class="calendar__grid" id="shifts-calendar-grid"></div>
           </section>
         </main>
+
+        <div class="modal-overlay" id="day-modal-overlay" hidden>
+          <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="day-modal-title">
+            <div class="modal-box__header">
+              <h3 id="day-modal-title"></h3>
+              <button class="table-action table-action--icon" type="button" id="close-day-modal-button" aria-label="Fechar">✕</button>
+            </div>
+            <p class="form-message" id="day-modal-message" aria-live="polite"></p>
+            <div id="day-modal-body"></div>
+          </div>
+        </div>
         <footer><div class="container"><p><span class="footer-heart"></span>Lory's Care — apoio para o cuidado cotidiano.</p></div></footer>
       </div>
     </div>
@@ -136,6 +130,6 @@
     <script src="js/patient-context.js"></script>
     <script src="js/live-updates.js"></script>
     <script src="js/schedule-repository.js"></script>
-    <script src="js/plantoes.js?v=20260827-1"></script>
+    <script src="js/plantoes.js?v=20260903-1"></script>
   </body>
 </html>

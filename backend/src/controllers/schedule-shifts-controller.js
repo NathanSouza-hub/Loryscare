@@ -33,6 +33,11 @@ function createScheduleShiftsController(service, changeBus) {
       changeBus.publish(request.userId, { resource: "schedule-shifts", action: "swapped" });
       response.status(204).send();
     }),
+    split: action(async (request, response) => {
+      await service.split(request.params.id, request.body.coveringProfileId, request.userId);
+      changeBus.publish(request.userId, { resource: "schedule-shifts", action: "split" });
+      response.status(204).send();
+    }),
   });
 }
 
