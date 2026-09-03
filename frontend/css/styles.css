@@ -1926,6 +1926,10 @@ tbody tr:last-child td {
   z-index: 100;
 }
 
+.modal-overlay[hidden] {
+  display: none;
+}
+
 .modal-box {
   width: 100%;
   max-width: 480px;
