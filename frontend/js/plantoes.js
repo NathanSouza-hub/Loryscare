@@ -11,7 +11,9 @@ const durationSelect = document.querySelector("#duration-select");
 const secondStartField = document.querySelector("#second-start-field");
 const caregiverChecklist = document.querySelector("#caregiver-checklist");
 const reorderList = document.querySelector("#reorder-list");
-const summaryText = document.querySelector("#summary-text");
+const summaryDuration = document.querySelector("#summary-duration");
+const summaryStartTime = document.querySelector("#summary-start-time");
+const summaryCaregivers = document.querySelector("#summary-caregivers");
 const summaryMessage = document.querySelector("#summary-message");
 const deleteMonthButton = document.querySelector("#delete-month-button");
 const calendarGrid = document.querySelector("#shifts-calendar-grid");
@@ -70,10 +72,28 @@ function shiftDurationHours(shift) {
   return (end - start) / 3600000;
 }
 
+function calendarEventsForDate(key) {
+  return calendarShifts.flatMap((shift) => {
+    const events = [];
+    if (shift.scheduledEndDate === key) {
+      events.push({ type: "exit", time: shift.scheduledEndTime, shift });
+    }
+    if (shift.scheduledDate === key) {
+      events.push({ type: "enter", time: shift.scheduledStartTime, shift });
+    }
+    return events;
+  }).sort((eventA, eventB) => (
+    eventA.time.localeCompare(eventB.time)
+      || (eventA.type === eventB.type ? 0 : (eventA.type === "exit" ? -1 : 1))
+      || eventA.shift.profileName.localeCompare(eventB.shift.profileName, "pt-BR")
+  ));
+}
+
 let allCaregivers = [];
 let orderedCaregiverIds = [];
 let currentScheduleMonth = null;
 let currentShifts = [];
+let calendarShifts = [];
 
 function populateMonthYearSelects() {
   MONTH_NAMES.forEach((name, index) => monthSelect.add(new Option(name, String(index + 1))));
@@ -177,18 +197,33 @@ function renderCalendar() {
     number.textContent = String(day);
     dayButton.append(number);
 
-    const dayShifts = currentShifts.filter((shift) => shift.scheduledDate === key);
-    if (dayShifts.length) {
-      const pills = document.createElement("div");
-      pills.className = "calendar__day-pills";
-      dayShifts.forEach((shift) => {
-        const pill = document.createElement("span");
-        pill.className = "calendar__day-pill";
-        pill.style.background = shift.profileColor || "#64748b";
-        pill.textContent = shift.profileName;
-        pills.append(pill);
+    const dayEvents = calendarEventsForDate(key);
+    if (dayEvents.length) {
+      const events = document.createElement("div");
+      events.className = "calendar__shift-events";
+      dayEvents.forEach((event) => {
+        const row = document.createElement("span");
+        row.className = `calendar__shift-event calendar__shift-event--${event.type}`;
+
+        const time = document.createElement("span");
+        time.className = "calendar__shift-event-time";
+        time.textContent = event.time;
+
+        const arrow = document.createElement("span");
+        arrow.className = "calendar__shift-event-arrow";
+        arrow.textContent = "→";
+        arrow.setAttribute("aria-hidden", "true");
+
+        const name = document.createElement("span");
+        name.className = "calendar__shift-event-name";
+        name.textContent = event.shift.profileName;
+
+        const action = event.type === "enter" ? "Entra" : "Sai";
+        row.setAttribute("aria-label", `${action}: ${event.shift.profileName}, às ${event.time}`);
+        row.append(time, arrow, name);
+        events.append(row);
       });
-      dayButton.append(pills);
+      dayButton.append(events);
     }
 
     dayButton.addEventListener("click", () => openDayModal(key));
@@ -504,7 +539,17 @@ async function handleSwapClick(shift) {
 async function loadShifts() {
   const year = Number(yearSelect.value);
   const month = Number(monthSelect.value);
-  currentShifts = await ScheduleRepository.listShifts(year, month);
+  const previousMonth = month === 1 ? 12 : month - 1;
+  const previousMonthYear = month === 1 ? year - 1 : year;
+  const [shifts, previousMonthShifts] = await Promise.all([
+    ScheduleRepository.listShifts(year, month),
+    ScheduleRepository.listShifts(previousMonthYear, previousMonth),
+  ]);
+  currentShifts = shifts;
+  calendarShifts = [
+    ...previousMonthShifts.filter((shift) => shift.scheduledEndDate.startsWith(`${year}-${pad2(month)}-`)),
+    ...currentShifts,
+  ];
   updateSwapPendingMessage();
   renderCalendar();
   renderDayModal();
@@ -595,7 +640,9 @@ async function loadMonth() {
       ? `${currentScheduleMonth.firstStartTime} e ${currentScheduleMonth.secondStartTime}`
       : currentScheduleMonth.firstStartTime;
     const namesLabel = currentScheduleMonth.caregivers.map((caregiver) => caregiver.name).join(" → ");
-    summaryText.textContent = `${durationLabel} · início(s) às ${periodsLabel} · ${namesLabel}`;
+    summaryDuration.textContent = durationLabel;
+    summaryStartTime.textContent = periodsLabel;
+    summaryCaregivers.textContent = namesLabel;
     summaryMessage.textContent = "";
     summaryPanel.hidden = false;
     await loadShifts();

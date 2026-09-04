@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Escala mensal de plantões no Lory's Care." />
     <title>Plantões | Lory's Care</title>
-    <link rel="stylesheet" href="css/styles.css?v=20260903-1" />
+    <link rel="stylesheet" href="css/styles.css?v=20260903-2" />
   </head>
   <body>
     <div class="app-shell">
@@ -88,9 +88,14 @@
             </div>
             <div id="summary-panel" hidden>
               <div class="history-panel__header">
-                <div><p class="eyebrow">Configuração</p><h3 id="summary-text"></h3></div>
+                <div><p class="eyebrow">Configuração</p><h3>Detalhes da escala</h3></div>
                 <button class="secondary-button" id="delete-month-button" type="button">Excluir escala do mês</button>
               </div>
+              <dl class="schedule-summary" aria-label="Configuração da escala">
+                <div class="schedule-summary__item"><dt>Tipo de plantão</dt><dd id="summary-duration"></dd></div>
+                <div class="schedule-summary__item"><dt>Início do plantão</dt><dd id="summary-start-time"></dd></div>
+                <div class="schedule-summary__item schedule-summary__item--wide"><dt>Ordem do revezamento</dt><dd id="summary-caregivers"></dd></div>
+              </dl>
               <p class="form-message" id="summary-message" aria-live="polite"></p>
             </div>
           </section>
@@ -98,6 +103,13 @@
           <section class="history-panel" id="shifts-panel" aria-labelledby="shifts-label" hidden>
             <div class="history-panel__header"><div><p class="eyebrow">Plantões</p><h2 id="shifts-label">Escala do mês</h2></div></div>
             <p class="form-message" id="swap-pending-message" aria-live="polite" hidden></p>
+            <div class="shift-calendar-guide" aria-label="Legenda do calendário">
+              <div class="shift-calendar-legend">
+                <span class="shift-calendar-legend__item shift-calendar-legend__item--enter">→ Entra no plantão</span>
+                <span class="shift-calendar-legend__item shift-calendar-legend__item--exit">→ Sai do plantão</span>
+              </div>
+              <p>Cada dia mostra quem encerra o plantão e quem assume o próximo.</p>
+            </div>
             <div class="calendar__grid calendar__grid--weekdays">
               <span class="calendar__weekday">Dom</span><span class="calendar__weekday">Seg</span><span class="calendar__weekday">Ter</span>
               <span class="calendar__weekday">Qua</span><span class="calendar__weekday">Qui</span><span class="calendar__weekday">Sex</span><span class="calendar__weekday">Sáb</span>
@@ -130,6 +142,6 @@
     <script src="js/patient-context.js"></script>
     <script src="js/live-updates.js"></script>
     <script src="js/schedule-repository.js"></script>
-    <script src="js/plantoes.js?v=20260903-1"></script>
+    <script src="js/plantoes.js?v=20260903-2"></script>
   </body>
 </html>
