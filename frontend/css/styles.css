@@ -1983,12 +1983,12 @@ tbody tr:last-child td {
 }
 
 .shift-calendar-legend__item--enter,
-.calendar__shift-event--enter {
+.calendar__shift-event--enter .calendar__shift-event-arrow {
   color: var(--success);
 }
 
 .shift-calendar-legend__item--exit,
-.calendar__shift-event--exit {
+.calendar__shift-event--exit .calendar__shift-event-arrow {
   color: var(--danger);
 }
 
@@ -2012,6 +2012,7 @@ tbody tr:last-child td {
   font-weight: 700;
   line-height: 1.35;
   text-align: left;
+  color: var(--text-secondary);
 }
 
 .calendar__shift-event--enter {
@@ -2024,12 +2025,12 @@ tbody tr:last-child td {
 
 .calendar__shift-event-arrow {
   font-size: 0.9rem;
+  font-weight: 800;
   line-height: 1;
 }
 
 .calendar__shift-event-name {
   overflow: hidden;
-  color: var(--text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

@@ -217,6 +217,7 @@ function renderCalendar() {
         const name = document.createElement("span");
         name.className = "calendar__shift-event-name";
         name.textContent = event.shift.profileName;
+        name.style.color = event.shift.profileColor || "var(--text)";
 
         const action = event.type === "enter" ? "Entra" : "Sai";
         row.setAttribute("aria-label", `${action}: ${event.shift.profileName}, às ${event.time}`);
@@ -546,8 +547,13 @@ async function loadShifts() {
     ScheduleRepository.listShifts(previousMonthYear, previousMonth),
   ]);
   currentShifts = shifts;
+  const currentStarts = new Set(currentShifts.map(
+    (shift) => `${shift.scheduledDate}T${shift.scheduledStartTime}`,
+  ));
   calendarShifts = [
-    ...previousMonthShifts.filter((shift) => shift.scheduledEndDate.startsWith(`${year}-${pad2(month)}-`)),
+    ...previousMonthShifts.filter((shift) => (
+      currentStarts.has(`${shift.scheduledEndDate}T${shift.scheduledEndTime}`)
+    )),
     ...currentShifts,
   ];
   updateSwapPendingMessage();
