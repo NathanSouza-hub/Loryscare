@@ -32,6 +32,7 @@ function createRoutinesController(service, changeBus) {
       response.status(204).send();
     }),
     getDaily: action(async (request, response) => response.json({ data: await service.getDaily(request.query.date, request.query.patientId, request.userId) })),
+    getMissed: action(async (request, response) => response.json({ data: await service.getMissed(request.query.patientId, request.userId) })),
     setCompletion: action(async (request, response) => {
       const data = await service.setCompletion(request.params.id, request.body, request.userId, request.profileId);
       changeBus.publish(request.userId, { resource: "routines", action: "completion-updated" });

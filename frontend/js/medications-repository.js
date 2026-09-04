@@ -26,5 +26,6 @@ const MedicationsRepository = (() => {
     });
   }
 
-  return Object.freeze({ create, getAll, getDaily, remove, setAdministration, update });
+  async function getMissed(patientId) { return (await request(`${API_URL}/missed?patientId=${encodeURIComponent(patientId)}`)).data; }
+  return Object.freeze({ create, getAll, getDaily, getMissed, remove, setAdministration, update });
 })();

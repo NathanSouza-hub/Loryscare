@@ -18,10 +18,13 @@ const notifications = document.querySelector("#notifications");
 const notificationsButton = document.querySelector("#notifications-button");
 const notificationsBadge = document.querySelector("#notifications-badge");
 const notificationsPanel = document.querySelector("#notifications-panel");
+const notificationsMissedEmpty = document.querySelector("#notifications-missed-empty");
+const notificationsMissedList = document.querySelector("#notifications-missed-list");
 const notificationsEmpty = document.querySelector("#notifications-empty");
 const notificationsList = document.querySelector("#notifications-list");
 
 let patientId = null;
+let currentItems = [];
 
 function localDate() {
   const now = new Date();
@@ -88,7 +91,7 @@ function taskRow(item) {
     { iconName: "check", title: item.doneLabel, action: item.doneStatus, baseClass: "table-action--success", doneClass: "table-action--done" },
     { iconName: "x", title: item.skipLabel, action: item.skipStatus, baseClass: "table-action--danger", doneClass: "table-action--skipped" },
   ].forEach(({ iconName: buttonIcon, title: actionTitle, action, baseClass, doneClass }) => {
-    const lockedByOther = item.status !== "pending" && item.kind !== "event"
+    const lockedByOther = item.status !== "pending"
       && item.authorProfileId != null
       && String(item.authorProfileId) !== String(CaregiverContext.getCurrentId());
     const button = document.createElement("button");
@@ -207,12 +210,15 @@ async function loadTasks() {
       subtitle: `Evento${eventItem.category ? ` · ${eventItem.category}` : ""}`,
       status: eventItem.status,
       authorName: eventItem.completedByProfileName,
+      authorProfileId: eventItem.completedByProfileId,
       doneLabel: "Concluir",
       doneStatus: "completed",
       skipLabel: "Não realizado",
       skipStatus: "skipped",
     })),
   ].sort((first, second) => first.time.localeCompare(second.time) || first.title.localeCompare(second.title));
+
+  currentItems = items;
 
   const pendingItems = items.filter((item) => item.status === "pending");
   const doneItems = items.filter((item) => item.status !== "pending");
@@ -282,13 +288,49 @@ function notificationRow(item) {
   return row;
 }
 
+function missedVerb(kind) {
+  if (kind === "medication") return "não foi aplicado(a)";
+  if (kind === "event") return "não foi realizado";
+  return "não foi realizada";
+}
+
+function missedRow(item) {
+  const row = document.createElement("li");
+  row.className = "notifications__item";
+  const title = document.createElement("p");
+  title.className = "notifications__item-title";
+  title.textContent = `${item.title} ${missedVerb(item.kind)}`;
+  const when = document.createElement("p");
+  when.className = "notifications__item-when";
+  when.textContent = item.onDutyProfileName ? `${item.onDutyProfileName} estava de plantão` : "Ontem";
+  row.append(title, when);
+  return row;
+}
+
 async function loadNotifications() {
-  const upcoming = await EventsRepository.getUpcoming(patientId, 3);
+  const [upcoming, missedRoutines, missedMedications, missedEvents] = await Promise.all([
+    EventsRepository.getUpcoming(patientId, 3),
+    RoutinesRepository.getMissed(patientId),
+    MedicationsRepository.getMissed(patientId),
+    EventsRepository.getMissed(patientId),
+  ]);
+  const missed = [
+    ...missedRoutines.map((item) => ({ ...item, kind: "routine" })),
+    ...missedMedications.map((item) => ({ ...item, kind: "medication" })),
+    ...missedEvents.map((item) => ({ ...item, kind: "event" })),
+  ];
+
+  notificationsMissedList.replaceChildren();
+  notificationsMissedEmpty.hidden = missed.length > 0;
+  missed.forEach((item) => notificationsMissedList.append(missedRow(item)));
+
   notificationsList.replaceChildren();
   notificationsEmpty.hidden = upcoming.length > 0;
-  notificationsBadge.hidden = upcoming.length === 0;
-  if (upcoming.length) notificationsBadge.textContent = String(upcoming.length);
   upcoming.forEach((item) => notificationsList.append(notificationRow(item)));
+
+  const totalBadge = upcoming.length + missed.length;
+  notificationsBadge.hidden = totalBadge === 0;
+  if (totalBadge) notificationsBadge.textContent = String(totalBadge);
 }
 
 notificationsButton.addEventListener("click", (event) => {
@@ -300,23 +342,28 @@ document.addEventListener("click", (event) => {
   if (!notificationsPanel.hidden && !notifications.contains(event.target)) notificationsPanel.hidden = true;
 });
 
-todayList.addEventListener("click", async (event) => {
+async function handleTaskAction(event) {
   const target = event.target.closest("[data-action]");
   if (!target) return;
+  const item = currentItems.find((entry) => entry.kind === target.dataset.kind && String(entry.id) === target.dataset.id);
+  const desiredStatus = item && item.status === target.dataset.action ? "pending" : target.dataset.action;
   try {
     if (target.dataset.kind === "routine") {
-      await RoutinesRepository.setCompletion(target.dataset.id, { date: selectedDate, status: target.dataset.action });
+      await RoutinesRepository.setCompletion(target.dataset.id, { date: selectedDate, status: desiredStatus });
     } else if (target.dataset.kind === "event") {
-      await EventsRepository.setStatus(target.dataset.id, target.dataset.action);
+      await EventsRepository.setStatus(target.dataset.id, desiredStatus);
     } else {
-      await MedicationsRepository.setAdministration(target.dataset.medicationId, target.dataset.id, { date: selectedDate, status: target.dataset.action });
+      await MedicationsRepository.setAdministration(target.dataset.medicationId, target.dataset.id, { date: selectedDate, status: desiredStatus });
     }
     await loadTasks();
   } catch (error) {
     message.textContent = error.message;
     await loadTasks();
   }
-});
+}
+
+todayList.addEventListener("click", handleTaskAction);
+todayDoneList.addEventListener("click", handleTaskAction);
 
 tasksDate.addEventListener("change", () => {
   selectedDate = tasksDate.value || today;

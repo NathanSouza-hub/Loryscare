@@ -70,9 +70,22 @@ function createRoutinesService(repository) {
     const date = typeof input.date === "string" ? input.date : "";
     const status = input.status;
     if (!isDate(date)) details.date = "Informe uma data válida";
-    if (!new Set(["completed", "skipped"]).has(status)) details.status = "Status inválido";
+    if (!new Set(["completed", "skipped", "pending"]).has(status)) details.status = "Status inválido";
     if (Object.keys(details).length) throw new RoutineValidationError(details);
     if (!(await repository.existsOnDate(id, date, userId))) throw new RoutineNotFoundError("Atividade não encontrada nesta data");
+
+    if (status === "pending") {
+      const existing = await repository.findCompletion(id, date);
+      if (!existing) return null;
+      if (existing.authorProfileId != null && String(existing.authorProfileId) !== String(profileId ?? null)) {
+        throw new RoutineCompletionConflictError({
+          authorProfileName: existing.authorProfileName,
+          completedAt: existing.completedAt,
+        });
+      }
+      await repository.removeCompletion(existing.id);
+      return null;
+    }
 
     const completedAt = status === "completed" ? new Date() : null;
     const authorProfileId = profileId ?? null;
@@ -99,7 +112,17 @@ function createRoutinesService(repository) {
     }
     return applyEdit(existing);
   }
-  return Object.freeze({ create, getAll, getDaily, remove, setCompletion, update });
+  function yesterday() {
+    const date = new Date();
+    date.setDate(date.getDate() - 1);
+    const pad = (value) => String(value).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+  async function getMissed(patientId, userId) {
+    validateId(patientId, "patientId");
+    return repository.getMissed(yesterday(), patientId, userId);
+  }
+  return Object.freeze({ create, getAll, getDaily, getMissed, remove, setCompletion, update });
 }
 
 module.exports = createRoutinesService;

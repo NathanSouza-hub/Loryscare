@@ -104,7 +104,38 @@ async function updateCompletion(id, data) {
   return result.rows[0];
 }
 
+async function getMissed(date, patientId, userId) {
+  const result = await pool.query(
+    `SELECT r.id, r.title, to_char(r.scheduled_time, 'HH24:MI') AS time,
+       shift."onDutyProfileName"
+     FROM routines r
+     LEFT JOIN routine_completions c ON c.routine_id = r.id AND c.scheduled_date = $1
+     LEFT JOIN LATERAL (
+       SELECT cp.name AS "onDutyProfileName"
+       FROM schedule_shifts ss
+       JOIN caregiver_profiles cp ON cp.id = ss.profile_id
+       WHERE ss.user_id = $3
+         AND ss.scheduled_start_at <= ($1::text || ' ' || to_char(r.scheduled_time, 'HH24:MI'))::timestamp
+         AND ss.scheduled_end_at > ($1::text || ' ' || to_char(r.scheduled_time, 'HH24:MI'))::timestamp
+       ORDER BY ss.scheduled_start_at DESC
+       LIMIT 1
+     ) shift ON TRUE
+     WHERE r.is_active = TRUE AND r.start_date <= $1
+       AND r.patient_id = $2
+       AND r.patient_id IN (SELECT id FROM patients WHERE user_id = $3)
+       AND COALESCE(c.status, 'pending') = 'pending'
+     ORDER BY r.scheduled_time, r.title`,
+    [date, patientId, userId],
+  );
+  return result.rows;
+}
+
+async function removeCompletion(id) {
+  const result = await pool.query("DELETE FROM routine_completions WHERE id = $1 RETURNING id", [id]);
+  return result.rowCount > 0;
+}
+
 module.exports = Object.freeze({
-  create, existsOnDate, findCompletion, getAll, getDaily, insertCompletion,
-  patientBelongsToUser, remove, update, updateCompletion,
+  create, existsOnDate, findCompletion, getAll, getDaily, getMissed, insertCompletion,
+  patientBelongsToUser, remove, removeCompletion, update, updateCompletion,
 });

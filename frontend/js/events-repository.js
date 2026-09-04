@@ -25,5 +25,6 @@ const EventsRepository = (() => {
   async function update(id, data) { return request(`${API_URL}/${id}`, { method: "PUT", body: JSON.stringify(data) }); }
   async function remove(id) { return request(`${API_URL}/${id}`, { method: "DELETE" }); }
   async function setStatus(id, status) { return request(`${API_URL}/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }); }
-  return Object.freeze({ create, getAll, getDaily, getUpcoming, remove, setStatus, update });
+  async function getMissed(patientId) { return (await request(`${API_URL}/missed?patientId=${encodeURIComponent(patientId)}`)).data; }
+  return Object.freeze({ create, getAll, getDaily, getMissed, getUpcoming, remove, setStatus, update });
 })();

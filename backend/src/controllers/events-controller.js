@@ -1,10 +1,13 @@
+const EventCompletionConflictError = require("../errors/event-completion-conflict-error");
 const EventNotFoundError = require("../errors/event-not-found-error");
 const EventValidationError = require("../errors/event-validation-error");
 
 function handle(error, response, next) {
   if (error instanceof EventValidationError) response.status(400).json({ error: error.message, details: error.details });
   else if (error instanceof EventNotFoundError) response.status(404).json({ error: error.message });
-  else next(error);
+  else if (error instanceof EventCompletionConflictError) {
+    response.status(409).json({ error: error.message, authorProfileName: error.authorProfileName, completedAt: error.completedAt });
+  } else next(error);
 }
 
 function createEventsController(service, changeBus) {
@@ -37,6 +40,7 @@ function createEventsController(service, changeBus) {
     getUpcoming: action(async (request, response) => response.json({
       data: await service.getUpcoming(request.query.patientId, request.userId, request.query.days || "3"),
     })),
+    getMissed: action(async (request, response) => response.json({ data: await service.getMissed(request.query.patientId, request.userId) })),
     setStatus: action(async (request, response) => {
       const data = await service.setStatus(request.params.id, request.body, request.userId, request.profileId);
       changeBus.publish(request.userId, { resource: "events", action: "status-updated" });

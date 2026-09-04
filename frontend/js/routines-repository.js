@@ -19,5 +19,6 @@ const RoutinesRepository = (() => {
   async function remove(id) { return request(`${API_URL}/${id}`, { method: "DELETE" }); }
   async function getDaily(date, patientId) { return (await request(`${API_URL}/daily?date=${encodeURIComponent(date)}&patientId=${encodeURIComponent(patientId)}`)).data; }
   async function setCompletion(id, data) { return request(`${API_URL}/${id}/completion`, { method: "PATCH", body: JSON.stringify(data) }); }
-  return Object.freeze({ create, getAll, getDaily, remove, setCompletion, update });
+  async function getMissed(patientId) { return (await request(`${API_URL}/missed?patientId=${encodeURIComponent(patientId)}`)).data; }
+  return Object.freeze({ create, getAll, getDaily, getMissed, remove, setCompletion, update });
 })();

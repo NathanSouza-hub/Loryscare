@@ -3,6 +3,7 @@ const { Router } = require("express");
 function createEventsRouter(controller) {
   const router = Router();
   router.get("/daily", controller.getDaily);
+  router.get("/missed", controller.getMissed);
   router.get("/upcoming", controller.getUpcoming);
   router.get("/", controller.getAll);
   router.post("/", controller.create);
