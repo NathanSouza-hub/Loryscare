@@ -95,11 +95,24 @@ function createMedicationsService(repository) {
     const status = input.status;
     const notes = typeof input.notes === "string" ? input.notes.trim() : "";
     if (!isDate(date)) details.date = "Informe uma data válida";
-    if (!new Set(["taken", "skipped"]).has(status)) details.status = "Status inválido";
+    if (!new Set(["taken", "skipped", "pending"]).has(status)) details.status = "Status inválido";
     if (notes.length > 500) details.notes = "Use no máximo 500 caracteres";
     if (Object.keys(details).length) throw new MedicationValidationError(details);
     if (!(await repository.scheduleBelongsToMedication(medicationId, scheduleId, userId))) {
       throw new MedicationNotFoundError("Horário do medicamento não encontrado");
+    }
+
+    if (status === "pending") {
+      const existing = await repository.findAdministration(scheduleId, date);
+      if (!existing) return null;
+      if (existing.authorProfileId != null && String(existing.authorProfileId) !== String(profileId ?? null)) {
+        throw new MedicationAdministrationConflictError({
+          authorProfileName: existing.authorProfileName,
+          administeredAt: existing.administeredAt,
+        });
+      }
+      await repository.removeAdministration(existing.id);
+      return null;
     }
 
     const administeredAt = status === "taken" ? new Date() : null;

@@ -259,4 +259,44 @@ describe("medications service", () => {
     const service = createMedicationsService({ getMissed: async () => assert.fail() });
     await assert.rejects(service.getMissed("abc", "9"), MedicationValidationError);
   });
+
+  it("reverte para pendente removendo a administração quando o autor é o mesmo", async () => {
+    let removedId;
+    const service = createMedicationsService({
+      scheduleBelongsToMedication: async () => true,
+      findAdministration: async () => ({
+        id: "6", status: "taken", administeredAt: new Date("2026-08-20T09:00:00Z"),
+        authorProfileId: "4", authorProfileName: "Nathan",
+      }),
+      async removeAdministration(id) { removedId = id; return true; },
+    });
+    const result = await service.setAdministration("1", "2", { date: "2026-08-20", status: "pending" }, "9", "4");
+    assert.equal(removedId, "6");
+    assert.equal(result, null);
+  });
+
+  it("rejeita reverter administração de OUTRO autor", async () => {
+    const service = createMedicationsService({
+      scheduleBelongsToMedication: async () => true,
+      findAdministration: async () => ({
+        id: "6", status: "taken", administeredAt: new Date("2026-08-20T09:00:00Z"),
+        authorProfileId: "4", authorProfileName: "Nathan",
+      }),
+      removeAdministration: async () => assert.fail("não deveria remover"),
+    });
+    await assert.rejects(
+      service.setAdministration("1", "2", { date: "2026-08-20", status: "pending" }, "9", "7"),
+      MedicationAdministrationConflictError,
+    );
+  });
+
+  it("reverter sem administração prévia é no-op", async () => {
+    const service = createMedicationsService({
+      scheduleBelongsToMedication: async () => true,
+      findAdministration: async () => null,
+      removeAdministration: async () => assert.fail("não deveria remover"),
+    });
+    const result = await service.setAdministration("1", "2", { date: "2026-08-20", status: "pending" }, "9", "4");
+    assert.equal(result, null);
+  });
 });

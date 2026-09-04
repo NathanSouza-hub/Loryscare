@@ -230,6 +230,11 @@ async function getMissed(date, patientId, userId) {
   return result.rows;
 }
 
+async function removeAdministration(id) {
+  const result = await pool.query("DELETE FROM medication_administrations WHERE id = $1 RETURNING id", [id]);
+  return result.rowCount > 0;
+}
+
 module.exports = Object.freeze({
   create,
   findAdministration,
@@ -239,6 +244,7 @@ module.exports = Object.freeze({
   insertAdministration,
   patientBelongsToUser,
   remove,
+  removeAdministration,
   scheduleBelongsToMedication,
   update,
   updateAdministration,
