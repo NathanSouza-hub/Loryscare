@@ -5,6 +5,7 @@ const monthMessage = document.querySelector("#month-message");
 const generatePanel = document.querySelector("#generate-panel");
 const summaryPanel = document.querySelector("#summary-panel");
 const shiftsPanel = document.querySelector("#shifts-panel");
+const printScheduleButton = document.querySelector("#print-schedule-button");
 const generateForm = document.querySelector("#generate-form");
 const generateMessage = document.querySelector("#generate-message");
 const durationSelect = document.querySelector("#duration-select");
@@ -665,6 +666,14 @@ async function loadMonth() {
 
 monthSelect.addEventListener("change", loadMonth);
 yearSelect.addEventListener("change", loadMonth);
+
+printScheduleButton.addEventListener("click", () => {
+  const previousTitle = document.title;
+  const monthName = MONTH_NAMES[Number(monthSelect.value) - 1];
+  document.title = `Escala de plantões - ${monthName} ${yearSelect.value}`;
+  window.addEventListener("afterprint", () => { document.title = previousTitle; }, { once: true });
+  window.print();
+});
 
 populateMonthYearSelects();
 document.querySelector("#current-date").textContent = new Intl.DateTimeFormat("pt-BR", { dateStyle: "full" }).format(new Date());

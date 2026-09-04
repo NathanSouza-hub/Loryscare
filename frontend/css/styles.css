@@ -2196,3 +2196,91 @@ tbody tr:last-child td {
 .day-shift-card__schedule-field {
   display: none;
 }
+
+.schedule-print-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  .sidebar,
+  .topbar,
+  footer,
+  .page-header,
+  .schedule-period-selectors,
+  #generate-panel,
+  #delete-month-button,
+  #month-message,
+  #summary-message,
+  #swap-pending-message,
+  .schedule-print-button,
+  .modal-overlay {
+    display: none !important;
+  }
+
+  .app-shell,
+  .main-area,
+  .main-content,
+  .container {
+    display: block;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .history-panel {
+    margin: 0 0 12px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .history-panel__header {
+    margin-bottom: 12px;
+  }
+
+  .schedule-summary {
+    margin-top: 10px;
+  }
+
+  .schedule-summary__item {
+    padding: 8px 10px;
+  }
+
+  .shift-calendar-guide {
+    margin-bottom: 10px;
+    padding: 8px 10px;
+  }
+
+  .calendar__grid {
+    gap: 5px;
+  }
+
+  .calendar__day {
+    min-height: 61px;
+    padding: 5px;
+    cursor: default;
+    break-inside: avoid;
+  }
+
+  .calendar__day:hover {
+    border-color: var(--border);
+  }
+}

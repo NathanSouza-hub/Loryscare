@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Escala mensal de plantões no Lory's Care." />
     <title>Plantões | Lory's Care</title>
-    <link rel="stylesheet" href="css/styles.css?v=20260903-7" />
+    <link rel="stylesheet" href="css/styles.css?v=20260904-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -101,7 +101,12 @@
           </section>
 
           <section class="history-panel" id="shifts-panel" aria-labelledby="shifts-label" hidden>
-            <div class="history-panel__header"><div><p class="eyebrow">Plantões</p><h2 id="shifts-label">Escala do mês</h2></div></div>
+            <div class="history-panel__header">
+              <div><p class="eyebrow">Plantões</p><h2 id="shifts-label">Escala do mês</h2></div>
+              <button class="secondary-button schedule-print-button" id="print-schedule-button" type="button" title="Gerar PDF da escala">
+                <span class="icon" data-icon="fileText"></span>Gerar PDF
+              </button>
+            </div>
             <p class="form-message" id="swap-pending-message" aria-live="polite" hidden></p>
             <div class="shift-calendar-guide" aria-label="Legenda do calendário">
               <div class="shift-calendar-legend">
@@ -142,6 +147,6 @@
     <script src="js/patient-context.js"></script>
     <script src="js/live-updates.js"></script>
     <script src="js/schedule-repository.js"></script>
-    <script src="js/plantoes.js?v=20260903-6"></script>
+    <script src="js/plantoes.js?v=20260904-1"></script>
   </body>
 </html>
