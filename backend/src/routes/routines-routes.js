@@ -3,6 +3,7 @@ const { Router } = require("express");
 function createRoutinesRouter(controller) {
   const router = Router();
   router.get("/daily", controller.getDaily);
+  router.get("/missed", controller.getMissed);
   router.get("/", controller.getAll);
   router.post("/", controller.create);
   router.put("/:id", controller.update);

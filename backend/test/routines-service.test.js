@@ -184,4 +184,27 @@ describe("routines service", () => {
     const service = createRoutinesService({ existsOnDate: async () => false });
     await assert.rejects(service.setCompletion("1", { date: "2026-08-20", status: "skipped" }), RoutineNotFoundError);
   });
+
+  it("busca pendências de ontem repassando a data calculada e os ids", async () => {
+    let received;
+    const service = createRoutinesService({
+      async getMissed(date, patientId, userId) { received = { date, patientId, userId }; return [{ id: "1" }]; },
+    });
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const pad = (value) => String(value).padStart(2, "0");
+    const expectedDate = `${yesterday.getFullYear()}-${pad(yesterday.getMonth() + 1)}-${pad(yesterday.getDate())}`;
+
+    const result = await service.getMissed("3", "9");
+
+    assert.deepEqual(result, [{ id: "1" }]);
+    assert.equal(received.date, expectedDate);
+    assert.equal(received.patientId, "3");
+    assert.equal(received.userId, "9");
+  });
+
+  it("rejeita getMissed sem patientId válido", async () => {
+    const service = createRoutinesService({ getMissed: async () => assert.fail() });
+    await assert.rejects(service.getMissed("abc", "9"), RoutineValidationError);
+  });
 });

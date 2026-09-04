@@ -99,7 +99,17 @@ function createRoutinesService(repository) {
     }
     return applyEdit(existing);
   }
-  return Object.freeze({ create, getAll, getDaily, remove, setCompletion, update });
+  function yesterday() {
+    const date = new Date();
+    date.setDate(date.getDate() - 1);
+    const pad = (value) => String(value).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+  async function getMissed(patientId, userId) {
+    validateId(patientId, "patientId");
+    return repository.getMissed(yesterday(), patientId, userId);
+  }
+  return Object.freeze({ create, getAll, getDaily, getMissed, remove, setCompletion, update });
 }
 
 module.exports = createRoutinesService;
