@@ -18,6 +18,8 @@ const notifications = document.querySelector("#notifications");
 const notificationsButton = document.querySelector("#notifications-button");
 const notificationsBadge = document.querySelector("#notifications-badge");
 const notificationsPanel = document.querySelector("#notifications-panel");
+const notificationsMissedEmpty = document.querySelector("#notifications-missed-empty");
+const notificationsMissedList = document.querySelector("#notifications-missed-list");
 const notificationsEmpty = document.querySelector("#notifications-empty");
 const notificationsList = document.querySelector("#notifications-list");
 
@@ -282,13 +284,49 @@ function notificationRow(item) {
   return row;
 }
 
+function missedVerb(kind) {
+  if (kind === "medication") return "não foi aplicado(a)";
+  if (kind === "event") return "não foi realizado";
+  return "não foi realizada";
+}
+
+function missedRow(item) {
+  const row = document.createElement("li");
+  row.className = "notifications__item";
+  const title = document.createElement("p");
+  title.className = "notifications__item-title";
+  title.textContent = `${item.title} ${missedVerb(item.kind)}`;
+  const when = document.createElement("p");
+  when.className = "notifications__item-when";
+  when.textContent = item.onDutyProfileName ? `${item.onDutyProfileName} estava de plantão` : "Ontem";
+  row.append(title, when);
+  return row;
+}
+
 async function loadNotifications() {
-  const upcoming = await EventsRepository.getUpcoming(patientId, 3);
+  const [upcoming, missedRoutines, missedMedications, missedEvents] = await Promise.all([
+    EventsRepository.getUpcoming(patientId, 3),
+    RoutinesRepository.getMissed(patientId),
+    MedicationsRepository.getMissed(patientId),
+    EventsRepository.getMissed(patientId),
+  ]);
+  const missed = [
+    ...missedRoutines.map((item) => ({ ...item, kind: "routine" })),
+    ...missedMedications.map((item) => ({ ...item, kind: "medication" })),
+    ...missedEvents.map((item) => ({ ...item, kind: "event" })),
+  ];
+
+  notificationsMissedList.replaceChildren();
+  notificationsMissedEmpty.hidden = missed.length > 0;
+  missed.forEach((item) => notificationsMissedList.append(missedRow(item)));
+
   notificationsList.replaceChildren();
   notificationsEmpty.hidden = upcoming.length > 0;
-  notificationsBadge.hidden = upcoming.length === 0;
-  if (upcoming.length) notificationsBadge.textContent = String(upcoming.length);
   upcoming.forEach((item) => notificationsList.append(notificationRow(item)));
+
+  const totalBadge = upcoming.length + missed.length;
+  notificationsBadge.hidden = totalBadge === 0;
+  if (totalBadge) notificationsBadge.textContent = String(totalBadge);
 }
 
 notificationsButton.addEventListener("click", (event) => {
