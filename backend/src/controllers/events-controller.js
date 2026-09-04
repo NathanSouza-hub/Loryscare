@@ -1,10 +1,13 @@
+const EventCompletionConflictError = require("../errors/event-completion-conflict-error");
 const EventNotFoundError = require("../errors/event-not-found-error");
 const EventValidationError = require("../errors/event-validation-error");
 
 function handle(error, response, next) {
   if (error instanceof EventValidationError) response.status(400).json({ error: error.message, details: error.details });
   else if (error instanceof EventNotFoundError) response.status(404).json({ error: error.message });
-  else next(error);
+  else if (error instanceof EventCompletionConflictError) {
+    response.status(409).json({ error: error.message, authorProfileName: error.authorProfileName, completedAt: error.completedAt });
+  } else next(error);
 }
 
 function createEventsController(service, changeBus) {

@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const { describe, it } = require("node:test");
+const EventCompletionConflictError = require("../src/errors/event-completion-conflict-error");
 const EventNotFoundError = require("../src/errors/event-not-found-error");
 const EventValidationError = require("../src/errors/event-validation-error");
 const createEventsService = require("../src/services/events-service");
@@ -128,8 +129,56 @@ describe("events service", () => {
   });
 
   it("rejeita conclusão de evento inexistente", async () => {
-    const service = createEventsService({ setStatus: async () => undefined });
+    const service = createEventsService({ setStatus: async () => undefined, findById: async () => null });
     await assert.rejects(service.setStatus("1", { status: "skipped" }, "9"), EventNotFoundError);
+  });
+
+  it("permite que qualquer perfil conclua um evento ainda pendente", async () => {
+    let received;
+    const service = createEventsService({
+      async setStatus(id, status, userId, profileId) {
+        received = { id, status, userId, profileId };
+        return { id, status, completedAt: new Date(), completedByProfileId: profileId };
+      },
+    });
+    const result = await service.setStatus("1", { status: "completed" }, "9", "4");
+    assert.equal(received.profileId, "4");
+    assert.equal(result.completedByProfileId, "4");
+  });
+
+  it("rejeita segunda conclusão de OUTRO perfil com EventCompletionConflictError", async () => {
+    const service = createEventsService({
+      setStatus: async () => null,
+      findById: async () => ({
+        id: "1", status: "completed", completedAt: new Date("2026-08-20T09:00:00Z"),
+        completedByProfileId: "4", completedByProfileName: "Nathan",
+      }),
+    });
+    await assert.rejects(
+      service.setStatus("1", { status: "skipped" }, "9", "7"),
+      EventCompletionConflictError,
+    );
+  });
+
+  it("lança EventNotFoundError quando o evento não existe/não é da conta", async () => {
+    const service = createEventsService({
+      setStatus: async () => null,
+      findById: async () => null,
+    });
+    await assert.rejects(service.setStatus("1", { status: "completed" }, "9", "7"), EventNotFoundError);
+  });
+
+  it("reverte para pendente quando o mesmo perfil concluiu", async () => {
+    let received;
+    const service = createEventsService({
+      async setStatus(id, status, userId, profileId) {
+        received = { id, status, userId, profileId };
+        return { id, status: "pending", completedAt: null, completedByProfileId: null };
+      },
+    });
+    const result = await service.setStatus("1", { status: "pending" }, "9", "4");
+    assert.equal(received.status, "pending");
+    assert.equal(result.completedByProfileId, null);
   });
 
   it("busca pendências de ontem repassando a data calculada e os ids", async () => {

@@ -1,3 +1,4 @@
+const EventCompletionConflictError = require("../errors/event-completion-conflict-error");
 const EventNotFoundError = require("../errors/event-not-found-error");
 const EventValidationError = require("../errors/event-validation-error");
 
@@ -99,10 +100,15 @@ function createEventsService(repository) {
   async function setStatus(id, input, userId, profileId) {
     validateId(id);
     const status = input.status;
-    if (!new Set(["completed", "skipped"]).has(status)) throw new EventValidationError({ status: "Status inválido" });
+    if (!new Set(["completed", "skipped", "pending"]).has(status)) throw new EventValidationError({ status: "Status inválido" });
     const result = await repository.setStatus(id, status, userId, profileId ?? null);
-    if (!result) throw new EventNotFoundError();
-    return result;
+    if (result) return result;
+    const existing = await repository.findById(id, userId);
+    if (!existing) throw new EventNotFoundError();
+    throw new EventCompletionConflictError({
+      authorProfileName: existing.completedByProfileName,
+      completedAt: existing.completedAt,
+    });
   }
   function yesterday() {
     const date = new Date();
