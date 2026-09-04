@@ -131,4 +131,27 @@ describe("events service", () => {
     const service = createEventsService({ setStatus: async () => undefined });
     await assert.rejects(service.setStatus("1", { status: "skipped" }, "9"), EventNotFoundError);
   });
+
+  it("busca pendências de ontem repassando a data calculada e os ids", async () => {
+    let received;
+    const service = createEventsService({
+      async getMissed(date, patientId, userId) { received = { date, patientId, userId }; return [{ id: "1" }]; },
+    });
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const pad = (value) => String(value).padStart(2, "0");
+    const expectedDate = `${yesterday.getFullYear()}-${pad(yesterday.getMonth() + 1)}-${pad(yesterday.getDate())}`;
+
+    const result = await service.getMissed("3", "9");
+
+    assert.deepEqual(result, [{ id: "1" }]);
+    assert.equal(received.date, expectedDate);
+    assert.equal(received.patientId, "3");
+    assert.equal(received.userId, "9");
+  });
+
+  it("rejeita getMissed sem patientId válido", async () => {
+    const service = createEventsService({ getMissed: async () => assert.fail() });
+    await assert.rejects(service.getMissed("abc", "9"), EventValidationError);
+  });
 });

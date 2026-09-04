@@ -111,6 +111,30 @@ async function setStatus(id, status, userId, profileId) {
   return result.rows[0];
 }
 
+async function getMissed(date, patientId, userId) {
+  const result = await pool.query(
+    `SELECT e.id, e.title, to_char(e.event_time, 'HH24:MI') AS time,
+       shift."onDutyProfileName"
+     FROM events e
+     LEFT JOIN LATERAL (
+       SELECT cp.name AS "onDutyProfileName"
+       FROM schedule_shifts ss
+       JOIN caregiver_profiles cp ON cp.id = ss.profile_id
+       WHERE ss.user_id = $3
+         AND ss.scheduled_start_at <= ($1::text || ' ' || to_char(e.event_time, 'HH24:MI'))::timestamp
+         AND ss.scheduled_end_at > ($1::text || ' ' || to_char(e.event_time, 'HH24:MI'))::timestamp
+       ORDER BY ss.scheduled_start_at DESC
+       LIMIT 1
+     ) shift ON TRUE
+     WHERE e.event_date = $1 AND e.status = 'pending'
+       AND e.patient_id = $2
+       AND e.patient_id IN (SELECT id FROM patients WHERE user_id = $3)
+     ORDER BY e.event_time, e.title`,
+    [date, patientId, userId],
+  );
+  return result.rows;
+}
+
 module.exports = Object.freeze({
-  create, createMany, getAll, getDaily, getUpcoming, patientBelongsToUser, remove, setStatus, update,
+  create, createMany, getAll, getDaily, getMissed, getUpcoming, patientBelongsToUser, remove, setStatus, update,
 });

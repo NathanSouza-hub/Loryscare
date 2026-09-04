@@ -37,6 +37,7 @@ function createEventsController(service, changeBus) {
     getUpcoming: action(async (request, response) => response.json({
       data: await service.getUpcoming(request.query.patientId, request.userId, request.query.days || "3"),
     })),
+    getMissed: action(async (request, response) => response.json({ data: await service.getMissed(request.query.patientId, request.userId) })),
     setStatus: action(async (request, response) => {
       const data = await service.setStatus(request.params.id, request.body, request.userId, request.profileId);
       changeBus.publish(request.userId, { resource: "events", action: "status-updated" });
