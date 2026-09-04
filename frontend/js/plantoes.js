@@ -53,6 +53,11 @@ function pad2(value) {
   return String(value).padStart(2, "0");
 }
 
+function timeAfter12Hours(time) {
+  const [hours, minutes] = time.split(":").map(Number);
+  return `${pad2((hours + 12) % 24)}:${pad2(minutes)}`;
+}
+
 function dateKey(year, monthIndex0, day) {
   return `${year}-${pad2(monthIndex0 + 1)}-${pad2(day)}`;
 }
@@ -580,8 +585,8 @@ function renderCaregiverChecklist() {
 }
 
 function toggleSecondStartField() {
-  secondStartField.hidden = durationSelect.value !== "12";
-  document.querySelector("#second-start-time").required = durationSelect.value === "12";
+  secondStartField.hidden = true;
+  document.querySelector("#second-start-time").required = false;
 }
 durationSelect.addEventListener("change", toggleSecondStartField);
 
@@ -599,7 +604,7 @@ generateForm.addEventListener("submit", async (event) => {
       month: Number(monthSelect.value),
       durationHours: Number(formData.durationHours),
       firstStartTime: formData.firstStartTime,
-      secondStartTime: formData.durationHours === "12" ? formData.secondStartTime : null,
+      secondStartTime: formData.durationHours === "12" ? timeAfter12Hours(formData.firstStartTime) : null,
       caregiverIds: orderedCaregiverIds,
     });
     await loadMonth();

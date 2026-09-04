@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Escala mensal de plantões no Lory's Care." />
     <title>Plantões | Lory's Care</title>
-    <link rel="stylesheet" href="css/styles.css?v=20260903-3" />
+    <link rel="stylesheet" href="css/styles.css?v=20260903-4" />
   </head>
   <body>
     <div class="app-shell">
@@ -69,8 +69,8 @@
                       <option value="24">24 horas</option>
                     </select>
                   </div>
-                  <div class="form-field"><label for="first-start-time">Início do 1º período</label><input id="first-start-time" name="firstStartTime" type="time" required /></div>
-                  <div class="form-field" id="second-start-field"><label for="second-start-time">Início do 2º período</label><input id="second-start-time" name="secondStartTime" type="time" /></div>
+                  <div class="form-field"><label for="first-start-time">Início do plantão</label><input id="first-start-time" name="firstStartTime" type="time" required /></div>
+                  <div class="form-field" id="second-start-field" hidden><label for="second-start-time">Início do 2º período</label><input id="second-start-time" name="secondStartTime" type="time" /></div>
                   <div class="form-field form-field--full">
                     <label>Cuidadores participantes</label>
                     <div class="weekday-options" id="caregiver-checklist"></div>
@@ -142,6 +142,6 @@
     <script src="js/patient-context.js"></script>
     <script src="js/live-updates.js"></script>
     <script src="js/schedule-repository.js"></script>
-    <script src="js/plantoes.js?v=20260903-3"></script>
+    <script src="js/plantoes.js?v=20260903-4"></script>
   </body>
 </html>
