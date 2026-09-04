@@ -209,6 +209,7 @@ function renderCalendar() {
       dayEvents.forEach((event) => {
         const row = document.createElement("span");
         row.className = `calendar__shift-event calendar__shift-event--${event.type}`;
+        row.style.setProperty("--caregiver-color", event.shift.profileColor || "#64748b");
 
         const time = document.createElement("span");
         time.className = "calendar__shift-event-time";
@@ -222,7 +223,6 @@ function renderCalendar() {
         const name = document.createElement("span");
         name.className = "calendar__shift-event-name";
         name.textContent = event.shift.profileName;
-        name.style.color = event.shift.profileColor || "var(--text)";
 
         const action = event.type === "enter" ? "Entra" : "Sai";
         row.setAttribute("aria-label", `${action}: ${event.shift.profileName}, às ${event.time}`);
@@ -332,7 +332,7 @@ function editShiftForm(shift) {
   profileField.append(profileLabel, profileSelect);
 
   const dateField = document.createElement("div");
-  dateField.className = "form-field day-shift-card__date-field";
+  dateField.className = "form-field day-shift-card__schedule-field";
   const dateLabel = document.createElement("label");
   dateLabel.textContent = "Data";
   const dateInput = document.createElement("input");
@@ -343,7 +343,7 @@ function editShiftForm(shift) {
   dateField.append(dateLabel, dateInput);
 
   const startField = document.createElement("div");
-  startField.className = "form-field";
+  startField.className = "form-field day-shift-card__schedule-field";
   const startLabel = document.createElement("label");
   startLabel.textContent = "Início";
   const startInput = document.createElement("input");
@@ -354,7 +354,7 @@ function editShiftForm(shift) {
   startField.append(startLabel, startInput);
 
   const endDateField = document.createElement("div");
-  endDateField.className = "form-field day-shift-card__date-field";
+  endDateField.className = "form-field day-shift-card__schedule-field";
   const endDateLabel = document.createElement("label");
   endDateLabel.textContent = "Data de término";
   const endDateInput = document.createElement("input");
@@ -365,7 +365,7 @@ function editShiftForm(shift) {
   endDateField.append(endDateLabel, endDateInput);
 
   const endField = document.createElement("div");
-  endField.className = "form-field";
+  endField.className = "form-field day-shift-card__schedule-field";
   const endLabel = document.createElement("label");
   endLabel.textContent = "Término";
   const endInput = document.createElement("input");

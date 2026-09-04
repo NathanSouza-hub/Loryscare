@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Escala mensal de plantões no Lory's Care." />
     <title>Plantões | Lory's Care</title>
-    <link rel="stylesheet" href="css/styles.css?v=20260903-4" />
+    <link rel="stylesheet" href="css/styles.css?v=20260903-7" />
   </head>
   <body>
     <div class="app-shell">
@@ -51,9 +51,9 @@
           <section class="history-panel" aria-labelledby="month-label">
             <div class="history-panel__header">
               <div><p class="eyebrow">Escala</p><h2 id="month-label">Mês</h2></div>
-              <div class="history-panel__header-actions">
-                <select id="month-select" aria-label="Mês"></select>
-                <select id="year-select" aria-label="Ano"></select>
+              <div class="history-panel__header-actions schedule-period-selectors">
+                <select class="schedule-period-select schedule-period-select--month" id="month-select" aria-label="Mês"></select>
+                <select class="schedule-period-select schedule-period-select--year" id="year-select" aria-label="Ano"></select>
               </div>
             </div>
             <p class="form-message" id="month-message" aria-live="polite"></p>
@@ -142,6 +142,6 @@
     <script src="js/patient-context.js"></script>
     <script src="js/live-updates.js"></script>
     <script src="js/schedule-repository.js"></script>
-    <script src="js/plantoes.js?v=20260903-4"></script>
+    <script src="js/plantoes.js?v=20260903-6"></script>
   </body>
 </html>

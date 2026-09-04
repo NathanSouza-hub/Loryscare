@@ -990,6 +990,48 @@ footer .footer-heart svg {
   gap: 16px;
 }
 
+.schedule-period-selectors {
+  flex-wrap: nowrap;
+  gap: 12px;
+}
+
+.schedule-period-select {
+  height: 48px;
+  padding: 0 42px 0 15px;
+  color: var(--text);
+  background-color: #ffffff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364758b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 14px center;
+  background-repeat: no-repeat;
+  border: 1px solid var(--input-border);
+  border-radius: 11px;
+  outline: none;
+  font-size: 0.96rem;
+  cursor: pointer;
+  appearance: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.schedule-period-select--month {
+  width: 180px;
+}
+
+.schedule-period-select--year {
+  width: 124px;
+}
+
+.schedule-period-select:hover {
+  background-color: var(--surface-muted);
+  border-color: color-mix(in srgb, var(--primary) 48%, var(--input-border));
+}
+
+.schedule-period-select:focus,
+.schedule-period-select:focus-visible {
+  background-color: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
 .tabs-row {
   margin-bottom: 24px;
   display: flex;
@@ -1699,6 +1741,17 @@ tbody tr:last-child td {
     flex-wrap: wrap;
   }
 
+  .schedule-period-selectors {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .schedule-period-select--month,
+  .schedule-period-select--year {
+    width: 100%;
+  }
+
   .notifications__panel {
     width: min(300px, calc(100vw - 40px));
   }
@@ -2006,21 +2059,14 @@ tbody tr:last-child td {
   gap: 4px;
   min-width: 0;
   padding: 3px 5px;
-  background: var(--surface);
+  background: color-mix(in srgb, var(--caregiver-color) 18%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--caregiver-color) 34%, var(--border));
   border-radius: 6px;
   font-size: 0.68rem;
   font-weight: 700;
   line-height: 1.35;
   text-align: left;
   color: var(--text-secondary);
-}
-
-.calendar__shift-event--enter {
-  background: var(--success-light);
-}
-
-.calendar__shift-event--exit {
-  background: var(--danger-light);
 }
 
 .calendar__shift-event-arrow {
@@ -2031,6 +2077,8 @@ tbody tr:last-child td {
 
 .calendar__shift-event-name {
   overflow: hidden;
+  color: color-mix(in srgb, var(--caregiver-color) 68%, var(--text));
+  font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2144,7 +2192,7 @@ tbody tr:last-child td {
   border-top: 1px solid var(--border);
 }
 
-/* Mantido no formulário para preservar as datas atuais e permitir reativação futura. */
-.day-shift-card__date-field {
+/* Mantido no formulário para preservar o período atual e permitir reativação futura. */
+.day-shift-card__schedule-field {
   display: none;
 }
