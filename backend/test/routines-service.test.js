@@ -207,4 +207,44 @@ describe("routines service", () => {
     const service = createRoutinesService({ getMissed: async () => assert.fail() });
     await assert.rejects(service.getMissed("abc", "9"), RoutineValidationError);
   });
+
+  it("reverte para pendente removendo a conclusão quando o autor é o mesmo", async () => {
+    let removedId;
+    const service = createRoutinesService({
+      existsOnDate: async () => true,
+      findCompletion: async () => ({
+        id: "6", status: "completed", completedAt: new Date("2026-08-20T09:00:00Z"),
+        authorProfileId: "4", authorProfileName: "Nathan",
+      }),
+      async removeCompletion(id) { removedId = id; return true; },
+    });
+    const result = await service.setCompletion("1", { date: "2026-08-20", status: "pending" }, "9", "4");
+    assert.equal(removedId, "6");
+    assert.equal(result, null);
+  });
+
+  it("rejeita reverter conclusão de OUTRO autor", async () => {
+    const service = createRoutinesService({
+      existsOnDate: async () => true,
+      findCompletion: async () => ({
+        id: "6", status: "completed", completedAt: new Date("2026-08-20T09:00:00Z"),
+        authorProfileId: "4", authorProfileName: "Nathan",
+      }),
+      removeCompletion: async () => assert.fail("não deveria remover"),
+    });
+    await assert.rejects(
+      service.setCompletion("1", { date: "2026-08-20", status: "pending" }, "9", "7"),
+      RoutineCompletionConflictError,
+    );
+  });
+
+  it("reverter sem conclusão prévia é no-op", async () => {
+    const service = createRoutinesService({
+      existsOnDate: async () => true,
+      findCompletion: async () => null,
+      removeCompletion: async () => assert.fail("não deveria remover"),
+    });
+    const result = await service.setCompletion("1", { date: "2026-08-20", status: "pending" }, "9", "4");
+    assert.equal(result, null);
+  });
 });

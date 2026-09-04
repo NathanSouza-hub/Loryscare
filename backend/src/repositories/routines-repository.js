@@ -130,7 +130,12 @@ async function getMissed(date, patientId, userId) {
   return result.rows;
 }
 
+async function removeCompletion(id) {
+  const result = await pool.query("DELETE FROM routine_completions WHERE id = $1 RETURNING id", [id]);
+  return result.rowCount > 0;
+}
+
 module.exports = Object.freeze({
   create, existsOnDate, findCompletion, getAll, getDaily, getMissed, insertCompletion,
-  patientBelongsToUser, remove, update, updateCompletion,
+  patientBelongsToUser, remove, removeCompletion, update, updateCompletion,
 });
