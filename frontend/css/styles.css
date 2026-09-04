@@ -2143,3 +2143,8 @@ tbody tr:last-child td {
   padding-top: 12px;
   border-top: 1px solid var(--border);
 }
+
+/* Mantido no formulário para preservar as datas atuais e permitir reativação futura. */
+.day-shift-card__date-field {
+  display: none;
+}

@@ -327,7 +327,7 @@ function editShiftForm(shift) {
   profileField.append(profileLabel, profileSelect);
 
   const dateField = document.createElement("div");
-  dateField.className = "form-field";
+  dateField.className = "form-field day-shift-card__date-field";
   const dateLabel = document.createElement("label");
   dateLabel.textContent = "Data";
   const dateInput = document.createElement("input");
@@ -349,7 +349,7 @@ function editShiftForm(shift) {
   startField.append(startLabel, startInput);
 
   const endDateField = document.createElement("div");
-  endDateField.className = "form-field";
+  endDateField.className = "form-field day-shift-card__date-field";
   const endDateLabel = document.createElement("label");
   endDateLabel.textContent = "Data de término";
   const endDateInput = document.createElement("input");
