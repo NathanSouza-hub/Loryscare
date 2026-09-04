@@ -41,6 +41,7 @@ function createMedicationsController(service, changeBus) {
       response.status(204).send();
     }),
     getDaily: action(async (request, response) => response.json({ data: await service.getDaily(request.query.date, request.query.patientId, request.userId) })),
+    getMissed: action(async (request, response) => response.json({ data: await service.getMissed(request.query.patientId, request.userId) })),
     setAdministration: action(async (request, response) => {
       const data = await service.setAdministration(request.params.id, request.params.scheduleId, request.body, request.userId, request.profileId);
       changeBus.publish(request.userId, { resource: "medications", action: "administration-updated" });

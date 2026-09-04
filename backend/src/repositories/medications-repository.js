@@ -202,11 +202,40 @@ async function updateAdministration(id, data) {
   return result.rows[0];
 }
 
+async function getMissed(date, patientId, userId) {
+  const result = await pool.query(
+    `SELECT m.id AS "medicationId", s.id AS "scheduleId", m.name AS title,
+       to_char(s.scheduled_time, 'HH24:MI') AS time, shift."onDutyProfileName"
+     FROM medications m
+     JOIN medication_schedules s ON s.medication_id = m.id AND s.is_active = TRUE
+     LEFT JOIN medication_administrations a ON a.schedule_id = s.id AND a.scheduled_date = $1
+     LEFT JOIN LATERAL (
+       SELECT cp.name AS "onDutyProfileName"
+       FROM schedule_shifts ss
+       JOIN caregiver_profiles cp ON cp.id = ss.profile_id
+       WHERE ss.user_id = $3
+         AND ss.scheduled_start_at <= ($1::text || ' ' || to_char(s.scheduled_time, 'HH24:MI'))::timestamp
+         AND ss.scheduled_end_at > ($1::text || ' ' || to_char(s.scheduled_time, 'HH24:MI'))::timestamp
+       ORDER BY ss.scheduled_start_at DESC
+       LIMIT 1
+     ) shift ON TRUE
+     WHERE m.is_active = TRUE
+       AND m.start_date <= $1 AND (m.end_date IS NULL OR m.end_date >= $1)
+       AND m.patient_id = $2
+       AND m.patient_id IN (SELECT id FROM patients WHERE user_id = $3)
+       AND COALESCE(a.status, 'pending') = 'pending'
+     ORDER BY s.scheduled_time, m.name`,
+    [date, patientId, userId],
+  );
+  return result.rows;
+}
+
 module.exports = Object.freeze({
   create,
   findAdministration,
   getAll,
   getDaily,
+  getMissed,
   insertAdministration,
   patientBelongsToUser,
   remove,
