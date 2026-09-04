@@ -342,7 +342,7 @@ document.addEventListener("click", (event) => {
   if (!notificationsPanel.hidden && !notifications.contains(event.target)) notificationsPanel.hidden = true;
 });
 
-todayList.addEventListener("click", async (event) => {
+async function handleTaskAction(event) {
   const target = event.target.closest("[data-action]");
   if (!target) return;
   const item = currentItems.find((entry) => entry.kind === target.dataset.kind && String(entry.id) === target.dataset.id);
@@ -360,7 +360,10 @@ todayList.addEventListener("click", async (event) => {
     message.textContent = error.message;
     await loadTasks();
   }
-});
+}
+
+todayList.addEventListener("click", handleTaskAction);
+todayDoneList.addEventListener("click", handleTaskAction);
 
 tasksDate.addEventListener("change", () => {
   selectedDate = tasksDate.value || today;

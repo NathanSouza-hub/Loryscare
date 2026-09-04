@@ -181,6 +181,21 @@ describe("events service", () => {
     assert.equal(result.completedByProfileId, null);
   });
 
+  it("permite que o mesmo perfil mude diretamente de concluído para não realizado", async () => {
+    let received;
+    const service = createEventsService({
+      async setStatus(id, status, userId, profileId) {
+        received = { id, status, userId, profileId };
+        return { id, status: "skipped", completedAt: null, completedByProfileId: profileId };
+      },
+    });
+    const result = await service.setStatus("1", { status: "skipped" }, "9", "4");
+    assert.equal(received.status, "skipped");
+    assert.equal(received.profileId, "4");
+    assert.equal(result.status, "skipped");
+    assert.equal(result.completedByProfileId, "4");
+  });
+
   it("busca pendências de ontem repassando a data calculada e os ids", async () => {
     let received;
     const service = createEventsService({

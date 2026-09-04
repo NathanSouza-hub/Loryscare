@@ -370,6 +370,10 @@ textarea {
   gap: 12px;
 }
 
+.notifications__list + .notifications__title {
+  margin-top: 18px;
+}
+
 .notifications__item-title {
   margin: 0;
   font-weight: 600;
