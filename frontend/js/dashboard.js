@@ -84,6 +84,12 @@ function taskRow(item) {
   subtitle.className = "today-item__subtitle";
   subtitle.textContent = item.subtitle;
   info.append(title, subtitle);
+  if (item.instructions) {
+    const instructions = document.createElement("p");
+    instructions.className = "today-item__instructions";
+    instructions.textContent = item.instructions;
+    info.append(instructions);
+  }
 
   const actions = document.createElement("div");
   actions.className = "today-item__actions";
@@ -194,6 +200,7 @@ async function loadTasks() {
       medicationId: dose.medicationId,
       title: dose.name,
       subtitle: `Medicamento · ${dose.dosage}`,
+      instructions: dose.instructions,
       status: dose.status,
       authorName: dose.authorProfileName,
       authorProfileId: dose.authorProfileId,
