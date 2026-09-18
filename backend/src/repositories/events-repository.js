@@ -141,7 +141,7 @@ async function getMissed(date, patientId, userId) {
        ORDER BY ss.scheduled_start_at DESC
        LIMIT 1
      ) shift ON TRUE
-     WHERE e.event_date = $1 AND e.status = 'pending'
+     WHERE e.event_date = $1::date AND e.status = 'pending'
        AND e.patient_id = $2
        AND e.patient_id IN (SELECT id FROM patients WHERE user_id = $3)
      ORDER BY e.event_time, e.title`,
