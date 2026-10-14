@@ -21,6 +21,15 @@ function createScheduleMonthsController(service, changeBus) {
       changeBus.publish(request.userId, { resource: "schedule-months", action: "created" });
       response.status(201).json({ data });
     }),
+    getEarnings: action(async (request, response) => {
+      const data = await service.getEarnings(request.params.id, request.userId, request.profileId);
+      response.json({ data });
+    }),
+    setRates: action(async (request, response) => {
+      await service.setRates(request.params.id, request.body, request.userId);
+      changeBus.publish(request.userId, { resource: "schedule-months", action: "rates-updated" });
+      response.status(204).send();
+    }),
     remove: action(async (request, response) => {
       await service.remove(request.params.id, request.userId);
       changeBus.publish(request.userId, { resource: "schedule-months", action: "removed" });

@@ -24,6 +24,25 @@ const dayModalTitle = document.querySelector("#day-modal-title");
 const dayModalMessage = document.querySelector("#day-modal-message");
 const dayModalBody = document.querySelector("#day-modal-body");
 const closeDayModalButton = document.querySelector("#close-day-modal-button");
+const tabButtons = document.querySelectorAll(".tab-button");
+const tabEscala = document.querySelector("#tab-escala");
+const tabPagamentos = document.querySelector("#tab-pagamentos");
+const paymentsLabel = document.querySelector("#payments-label");
+const paymentsMessage = document.querySelector("#payments-message");
+const paymentsEmpty = document.querySelector("#payments-empty");
+const earningsSummary = document.querySelector("#earnings-summary");
+const earningsShiftCount = document.querySelector("#earnings-shift-count");
+const earningsRate = document.querySelector("#earnings-rate");
+const earningsTotal = document.querySelector("#earnings-total");
+const earningsNote = document.querySelector("#earnings-note");
+const ratesToggleButton = document.querySelector("#rates-toggle-button");
+const ratesForm = document.querySelector("#rates-form");
+const ratesList = document.querySelector("#rates-list");
+const ratesMessage = document.querySelector("#rates-message");
+const ratesCancelButton = document.querySelector("#rates-cancel-button");
+
+const currencyFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const shiftCountFormatter = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 
 let editingShiftId = null;
 let splittingShiftId = null;
@@ -97,6 +116,7 @@ function calendarEventsForDate(key) {
 
 let allCaregivers = [];
 let orderedCaregiverIds = [];
+let generateRates = {};
 let currentScheduleMonth = null;
 let currentShifts = [];
 let calendarShifts = [];
@@ -148,7 +168,18 @@ function renderReorderList() {
     downButton.addEventListener("click", () => moveCaregiver(index, index + 1));
     buttons.append(upButton, downButton);
 
-    item.append(position, name, buttons);
+    const rateInput = document.createElement("input");
+    rateInput.type = "number";
+    rateInput.min = "0";
+    rateInput.step = "0.01";
+    rateInput.inputMode = "decimal";
+    rateInput.placeholder = "Valor do plantão (R$)";
+    rateInput.className = "reorder-list__rate";
+    rateInput.setAttribute("aria-label", `Valor do plantão de ${caregiver.name}`);
+    rateInput.value = generateRates[profileId] ?? "";
+    rateInput.addEventListener("input", () => { generateRates[profileId] = rateInput.value; });
+
+    item.append(position, name, rateInput, buttons);
     reorderList.append(item);
   });
 }
@@ -607,6 +638,9 @@ generateForm.addEventListener("submit", async (event) => {
       firstStartTime: formData.firstStartTime,
       secondStartTime: formData.durationHours === "12" ? timeAfter12Hours(formData.firstStartTime) : null,
       caregiverIds: orderedCaregiverIds,
+      caregiverRates: Object.fromEntries(orderedCaregiverIds
+        .filter((id) => String(generateRates[id] ?? "").trim() !== "")
+        .map((id) => [id, generateRates[id]])),
     });
     await loadMonth();
   } catch (error) {
@@ -639,12 +673,16 @@ async function loadMonth() {
     currentScheduleMonth = await ScheduleRepository.getMonth(year, month);
     monthMessage.textContent = "";
     if (!currentScheduleMonth) {
+      currentShifts = [];
+      calendarShifts = [];
       orderedCaregiverIds = [];
+      generateRates = {};
       generateForm.reset();
       toggleSecondStartField();
       renderCaregiverChecklist();
       renderReorderList();
       generatePanel.hidden = false;
+      await loadPayments();
       return;
     }
     const durationLabel = currentScheduleMonth.durationHours === 12 ? "12 horas" : "24 horas";
@@ -659,10 +697,139 @@ async function loadMonth() {
     summaryPanel.hidden = false;
     await loadShifts();
     shiftsPanel.hidden = false;
+    await loadPayments();
   } catch (error) {
     monthMessage.textContent = error.message;
   }
 }
+
+function showTab(name) {
+  tabEscala.hidden = name !== "escala";
+  tabPagamentos.hidden = name !== "pagamentos";
+  tabButtons.forEach((btn) => {
+    const active = btn.dataset.tab === name;
+    btn.classList.toggle("tab-button--active", active);
+    btn.setAttribute("aria-selected", String(active));
+  });
+}
+tabButtons.forEach((btn) => btn.addEventListener("click", () => showTab(btn.dataset.tab)));
+
+function formatCents(cents) {
+  return currencyFormatter.format(cents / 100);
+}
+
+function showPaymentsEmpty(text) {
+  paymentsEmpty.textContent = text;
+  paymentsEmpty.hidden = false;
+}
+
+function rateCaregivers() {
+  const caregivers = new Map();
+  currentScheduleMonth.caregivers.forEach((caregiver) => caregivers.set(String(caregiver.profileId), caregiver.name));
+  currentShifts.forEach((shift) => {
+    if (!caregivers.has(String(shift.profileId))) caregivers.set(String(shift.profileId), shift.profileName);
+  });
+  return [...caregivers].map(([profileId, name]) => ({ profileId, name }));
+}
+
+function renderRatesForm() {
+  const rated = new Set((currentScheduleMonth.ratedProfileIds || []).map(String));
+  ratesList.replaceChildren();
+  rateCaregivers().forEach(({ profileId, name }) => {
+    const item = document.createElement("li");
+    item.className = "rates-list__item";
+    const inputId = `rate-input-${profileId}`;
+
+    const label = document.createElement("label");
+    label.className = "rates-list__name";
+    label.htmlFor = inputId;
+    label.textContent = name;
+
+    const status = document.createElement("span");
+    status.className = `rates-list__status${rated.has(profileId) ? " rates-list__status--set" : ""}`;
+    status.textContent = rated.has(profileId) ? "Valor definido" : "Sem valor";
+
+    const input = document.createElement("input");
+    input.id = inputId;
+    input.type = "number";
+    input.min = "0";
+    input.step = "0.01";
+    input.inputMode = "decimal";
+    input.name = profileId;
+    input.placeholder = rated.has(profileId) ? "Novo valor (R$)" : "Valor (R$)";
+
+    item.append(label, status, input);
+    ratesList.append(item);
+  });
+}
+
+function closeRatesForm() {
+  ratesForm.hidden = true;
+  ratesForm.reset();
+  ratesMessage.textContent = "";
+}
+
+async function loadPayments() {
+  const year = Number(yearSelect.value);
+  const month = Number(monthSelect.value);
+  const profileName = CaregiverContext.getCurrentName();
+  const periodLabel = `${MONTH_NAMES[month - 1]} / ${year}`;
+  paymentsLabel.textContent = profileName ? `Pagamento de ${profileName} · ${periodLabel}` : `Seu pagamento · ${periodLabel}`;
+  paymentsMessage.textContent = "";
+  paymentsEmpty.hidden = true;
+  earningsSummary.hidden = true;
+  earningsNote.hidden = true;
+  closeRatesForm();
+  ratesToggleButton.hidden = !currentScheduleMonth;
+
+  if (!currentScheduleMonth) {
+    showPaymentsEmpty("Nenhuma escala gerada para este mês. Gere a escala na aba Escala.");
+    return;
+  }
+  if (!CaregiverContext.getCurrentId()) {
+    showPaymentsEmpty("Selecione um perfil para ver quanto você vai receber.");
+    return;
+  }
+  try {
+    const earnings = await ScheduleRepository.getEarnings(currentScheduleMonth.id);
+    earningsShiftCount.textContent = shiftCountFormatter.format(earnings.shiftCount);
+    earningsRate.textContent = earnings.rateCents === null ? "Não definido" : formatCents(earnings.rateCents);
+    earningsTotal.textContent = earnings.totalCents === null
+      ? "Defina o valor do plantão para calcular"
+      : formatCents(earnings.totalCents);
+    earningsSummary.hidden = false;
+    earningsNote.hidden = false;
+  } catch (error) {
+    paymentsMessage.textContent = error.message;
+  }
+}
+
+ratesToggleButton.addEventListener("click", () => {
+  if (!ratesForm.hidden) {
+    closeRatesForm();
+    return;
+  }
+  renderRatesForm();
+  ratesForm.hidden = false;
+});
+ratesCancelButton.addEventListener("click", closeRatesForm);
+
+ratesForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const rates = Object.fromEntries([...new FormData(ratesForm).entries()]
+    .filter(([, value]) => String(value).trim() !== ""));
+  if (!Object.keys(rates).length) {
+    ratesMessage.textContent = "Preencha ao menos um valor";
+    return;
+  }
+  ratesMessage.textContent = "Salvando...";
+  try {
+    await ScheduleRepository.setRates(currentScheduleMonth.id, rates);
+    await loadMonth();
+  } catch (error) {
+    ratesMessage.textContent = error.message;
+  }
+});
 
 monthSelect.addEventListener("change", loadMonth);
 yearSelect.addEventListener("change", loadMonth);
@@ -676,6 +843,7 @@ printScheduleButton.addEventListener("click", () => {
 });
 
 populateMonthYearSelects();
+showTab("escala");
 document.querySelector("#current-date").textContent = new Intl.DateTimeFormat("pt-BR", { dateStyle: "full" }).format(new Date());
 toggleSecondStartField();
 CaregiverProfilesRepository.getAll().then((caregivers) => {

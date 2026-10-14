@@ -98,7 +98,7 @@ app.use("/api/work-shifts", requireAuth, attachProfile, createWorkShiftsRouter(w
 
 const scheduleMonthsService = createScheduleMonthsService(scheduleMonthsRepository, caregiverProfilesRepository);
 const scheduleMonthsController = createScheduleMonthsController(scheduleMonthsService, changeBus);
-app.use("/api/schedule-months", requireAuth, createScheduleMonthsRouter(scheduleMonthsController));
+app.use("/api/schedule-months", requireAuth, attachProfile, createScheduleMonthsRouter(scheduleMonthsController));
 
 const scheduleShiftsService = createScheduleShiftsService(scheduleShiftsRepository, caregiverProfilesRepository);
 const scheduleShiftsController = createScheduleShiftsController(scheduleShiftsService, changeBus);

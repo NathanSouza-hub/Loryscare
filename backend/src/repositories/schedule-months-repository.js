@@ -28,7 +28,57 @@ async function getCaregivers(scheduleMonthId) {
   return result.rows;
 }
 
-async function create({ userId, year, month, durationHours, firstStartTime, secondStartTime, caregiverIds, slots }) {
+async function getRatedProfileIds(scheduleMonthId) {
+  const result = await pool.query(
+    "SELECT profile_id::text AS \"profileId\" FROM schedule_month_rates WHERE schedule_month_id = $1",
+    [scheduleMonthId],
+  );
+  return result.rows.map((row) => row.profileId);
+}
+
+async function insertRates(client, scheduleMonthId, rates) {
+  for (const { profileId, rateCents } of rates) {
+    await client.query(
+      `INSERT INTO schedule_month_rates (schedule_month_id, profile_id, rate_cents) VALUES ($1, $2, $3)
+       ON CONFLICT (schedule_month_id, profile_id)
+       DO UPDATE SET rate_cents = EXCLUDED.rate_cents, updated_at = CURRENT_TIMESTAMP`,
+      [scheduleMonthId, profileId, rateCents],
+    );
+  }
+}
+
+async function upsertRates(scheduleMonthId, rates) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await insertRates(client, scheduleMonthId, rates);
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function getEarningsData(scheduleMonthId, profileId) {
+  const result = await pool.query(
+    `SELECT sm.duration_hours AS "durationHours",
+            smr.rate_cents AS "rateCents",
+            COALESCE((
+              SELECT SUM(EXTRACT(EPOCH FROM ss.scheduled_end_at - ss.scheduled_start_at) / 60)
+              FROM schedule_shifts ss
+              WHERE ss.schedule_month_id = sm.id AND ss.profile_id = $2
+            ), 0)::float AS "totalMinutes"
+     FROM schedule_months sm
+     LEFT JOIN schedule_month_rates smr ON smr.schedule_month_id = sm.id AND smr.profile_id = $2
+     WHERE sm.id = $1`,
+    [scheduleMonthId, profileId],
+  );
+  return result.rows[0];
+}
+
+async function create({ userId, year, month, durationHours, firstStartTime, secondStartTime, caregiverIds, slots, rates = [] }) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -51,6 +101,7 @@ async function create({ userId, year, month, durationHours, firstStartTime, seco
         [scheduleMonthId, userId, slot.scheduledStartAt, slot.scheduledEndAt, slot.profileId],
       );
     }
+    await insertRates(client, scheduleMonthId, rates);
     await client.query("COMMIT");
     return scheduleMonthId;
   } catch (error) {
@@ -85,5 +136,6 @@ async function remove(id, userId) {
 }
 
 module.exports = Object.freeze({
-  belongsToUser, create, findByYearMonth, getCaregivers, hasStartedShift, remove,
+  belongsToUser, create, findByYearMonth, getCaregivers, getEarningsData, getRatedProfileIds, hasStartedShift, remove,
+  upsertRates,
 });

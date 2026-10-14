@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Escala mensal de plantões no Lory's Care." />
     <title>Plantões | Lory's Care</title>
-    <link rel="stylesheet" href="css/styles.css?v=20260904-2" />
+    <link rel="stylesheet" href="css/styles.css?v=20261013-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -48,13 +48,21 @@
             <p>Monte a escala mensal dos cuidadores e acompanhe cada plantão programado.</p>
           </section>
 
+          <div class="tabs-row">
+            <div class="tabs" role="tablist">
+              <button class="tab-button" id="tab-button-escala" type="button" role="tab" data-tab="escala">Escala</button>
+              <button class="tab-button" id="tab-button-pagamentos" type="button" role="tab" data-tab="pagamentos">Pagamentos</button>
+            </div>
+            <div class="history-panel__header-actions schedule-period-selectors">
+              <select class="schedule-period-select schedule-period-select--month" id="month-select" aria-label="Mês"></select>
+              <select class="schedule-period-select schedule-period-select--year" id="year-select" aria-label="Ano"></select>
+            </div>
+          </div>
+
+          <div id="tab-escala">
           <section class="history-panel" id="schedule-settings-panel" aria-labelledby="month-label">
             <div class="history-panel__header">
               <div><p class="eyebrow">Escala</p><h2 id="month-label">Mês</h2></div>
-              <div class="history-panel__header-actions schedule-period-selectors">
-                <select class="schedule-period-select schedule-period-select--month" id="month-select" aria-label="Mês"></select>
-                <select class="schedule-period-select schedule-period-select--year" id="year-select" aria-label="Ano"></select>
-              </div>
             </div>
             <p class="form-message" id="month-message" aria-live="polite"></p>
 
@@ -121,6 +129,34 @@
             </div>
             <div class="calendar__grid" id="shifts-calendar-grid"></div>
           </section>
+          </div>
+
+          <section class="history-panel" id="tab-pagamentos" aria-labelledby="payments-label" hidden>
+            <div class="history-panel__header">
+              <div><p class="eyebrow">Pagamentos</p><h2 id="payments-label">Seu pagamento</h2></div>
+              <button class="secondary-button" id="rates-toggle-button" type="button" hidden>Definir valores</button>
+            </div>
+            <p class="form-message" id="payments-message" aria-live="polite"></p>
+            <p class="empty-history" id="payments-empty" hidden></p>
+
+            <dl class="schedule-summary" id="earnings-summary" aria-label="Seu pagamento no mês" hidden>
+              <div class="schedule-summary__item"><dt>Plantões no mês</dt><dd id="earnings-shift-count"></dd></div>
+              <div class="schedule-summary__item"><dt>Valor do plantão</dt><dd id="earnings-rate"></dd></div>
+              <div class="schedule-summary__item schedule-summary__item--wide earnings-total"><dt>Total a receber</dt><dd id="earnings-total"></dd></div>
+            </dl>
+            <p class="earnings-note" id="earnings-note" hidden>Cálculo: valor do plantão × plantões da escala do mês, já considerando trocas. Cada perfil vê apenas o próprio valor.</p>
+
+            <form class="rates-form" id="rates-form" hidden>
+              <h3>Definir valor do plantão</h3>
+              <p class="earnings-note">Por privacidade, os valores já cadastrados não são exibidos. Preencha apenas os que deseja definir ou alterar.</p>
+              <ul class="rates-list" id="rates-list"></ul>
+              <div class="form-actions">
+                <button class="primary-button" type="submit">Salvar valores</button>
+                <button class="secondary-button" id="rates-cancel-button" type="button">Cancelar</button>
+                <p class="form-message" id="rates-message" aria-live="polite"></p>
+              </div>
+            </form>
+          </section>
         </main>
 
         <div class="modal-overlay" id="day-modal-overlay" hidden>
@@ -146,7 +182,7 @@
     <script src="js/sidebar-toggle.js"></script>
     <script src="js/patient-context.js"></script>
     <script src="js/live-updates.js"></script>
-    <script src="js/schedule-repository.js"></script>
-    <script src="js/plantoes.js?v=20260904-1"></script>
+    <script src="js/schedule-repository.js?v=20261013-1"></script>
+    <script src="js/plantoes.js?v=20261013-1"></script>
   </body>
 </html>
