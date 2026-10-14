@@ -25,9 +25,9 @@ function createScheduleMonthsController(service, changeBus) {
       const data = await service.getEarnings(request.params.id, request.userId, request.profileId);
       response.json({ data });
     }),
-    setRates: action(async (request, response) => {
-      await service.setRates(request.params.id, request.body, request.userId);
-      changeBus.publish(request.userId, { resource: "schedule-months", action: "rates-updated" });
+    setShiftRate: action(async (request, response) => {
+      await service.setShiftRate(request.params.id, request.body, request.userId);
+      changeBus.publish(request.userId, { resource: "schedule-months", action: "rate-updated" });
       response.status(204).send();
     }),
     remove: action(async (request, response) => {

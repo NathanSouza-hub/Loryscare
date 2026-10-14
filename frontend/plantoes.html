@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Escala mensal de plantões no Lory's Care." />
     <title>Plantões | Lory's Care</title>
-    <link rel="stylesheet" href="css/styles.css?v=20261013-1" />
+    <link rel="stylesheet" href="css/styles.css?v=20261013-2" />
   </head>
   <body>
     <div class="app-shell">
@@ -79,6 +79,7 @@
                   </div>
                   <div class="form-field"><label for="first-start-time">Início do plantão</label><input id="first-start-time" name="firstStartTime" type="time" required /></div>
                   <div class="form-field" id="second-start-field" hidden><label for="second-start-time">Início do 2º período</label><input id="second-start-time" name="secondStartTime" type="time" /></div>
+                  <div class="form-field"><label for="generate-shift-rate">Valor do plantão (R$)</label><input id="generate-shift-rate" name="shiftRate" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Igual para todos (opcional)" /></div>
                   <div class="form-field form-field--full">
                     <label>Cuidadores participantes</label>
                     <div class="weekday-options" id="caregiver-checklist"></div>
@@ -134,7 +135,6 @@
           <section class="history-panel" id="tab-pagamentos" aria-labelledby="payments-label" hidden>
             <div class="history-panel__header">
               <div><p class="eyebrow">Pagamentos</p><h2 id="payments-label">Seu pagamento</h2></div>
-              <button class="secondary-button" id="rates-toggle-button" type="button" hidden>Definir valores</button>
             </div>
             <p class="form-message" id="payments-message" aria-live="polite"></p>
             <p class="empty-history" id="payments-empty" hidden></p>
@@ -144,16 +144,17 @@
               <div class="schedule-summary__item"><dt>Valor do plantão</dt><dd id="earnings-rate"></dd></div>
               <div class="schedule-summary__item schedule-summary__item--wide earnings-total"><dt>Total a receber</dt><dd id="earnings-total"></dd></div>
             </dl>
-            <p class="earnings-note" id="earnings-note" hidden>Cálculo: valor do plantão × plantões da escala do mês, já considerando trocas. Cada perfil vê apenas o próprio valor.</p>
+            <p class="earnings-note" id="earnings-note" hidden>Cálculo: valor do plantão × seus plantões na escala do mês. Se a escala mudar (troca, edição ou exclusão de plantão), o total é recalculado automaticamente.</p>
 
-            <form class="rates-form" id="rates-form" hidden>
-              <h3>Definir valor do plantão</h3>
-              <p class="earnings-note">Por privacidade, os valores já cadastrados não são exibidos. Preencha apenas os que deseja definir ou alterar.</p>
-              <ul class="rates-list" id="rates-list"></ul>
+            <form class="rates-form" id="rate-form" hidden>
+              <h3>Valor do plantão</h3>
+              <p class="earnings-note">O valor é o mesmo para todos os cuidadores deste mês.</p>
+              <div class="form-grid">
+                <div class="form-field"><label for="shift-rate-input">Valor do plantão (R$)</label><input id="shift-rate-input" name="shiftRate" type="number" min="0" step="0.01" inputmode="decimal" required /></div>
+              </div>
               <div class="form-actions">
-                <button class="primary-button" type="submit">Salvar valores</button>
-                <button class="secondary-button" id="rates-cancel-button" type="button">Cancelar</button>
-                <p class="form-message" id="rates-message" aria-live="polite"></p>
+                <button class="primary-button" type="submit">Salvar valor</button>
+                <p class="form-message" id="rate-message" aria-live="polite"></p>
               </div>
             </form>
           </section>
@@ -182,7 +183,7 @@
     <script src="js/sidebar-toggle.js"></script>
     <script src="js/patient-context.js"></script>
     <script src="js/live-updates.js"></script>
-    <script src="js/schedule-repository.js?v=20261013-1"></script>
-    <script src="js/plantoes.js?v=20261013-1"></script>
+    <script src="js/schedule-repository.js?v=20261013-2"></script>
+    <script src="js/plantoes.js?v=20261013-2"></script>
   </body>
 </html>

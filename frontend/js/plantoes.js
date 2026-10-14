@@ -35,11 +35,9 @@ const earningsShiftCount = document.querySelector("#earnings-shift-count");
 const earningsRate = document.querySelector("#earnings-rate");
 const earningsTotal = document.querySelector("#earnings-total");
 const earningsNote = document.querySelector("#earnings-note");
-const ratesToggleButton = document.querySelector("#rates-toggle-button");
-const ratesForm = document.querySelector("#rates-form");
-const ratesList = document.querySelector("#rates-list");
-const ratesMessage = document.querySelector("#rates-message");
-const ratesCancelButton = document.querySelector("#rates-cancel-button");
+const rateForm = document.querySelector("#rate-form");
+const shiftRateInput = document.querySelector("#shift-rate-input");
+const rateMessage = document.querySelector("#rate-message");
 
 const currencyFormatter = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const shiftCountFormatter = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
@@ -116,7 +114,6 @@ function calendarEventsForDate(key) {
 
 let allCaregivers = [];
 let orderedCaregiverIds = [];
-let generateRates = {};
 let currentScheduleMonth = null;
 let currentShifts = [];
 let calendarShifts = [];
@@ -168,18 +165,7 @@ function renderReorderList() {
     downButton.addEventListener("click", () => moveCaregiver(index, index + 1));
     buttons.append(upButton, downButton);
 
-    const rateInput = document.createElement("input");
-    rateInput.type = "number";
-    rateInput.min = "0";
-    rateInput.step = "0.01";
-    rateInput.inputMode = "decimal";
-    rateInput.placeholder = "Valor do plantão (R$)";
-    rateInput.className = "reorder-list__rate";
-    rateInput.setAttribute("aria-label", `Valor do plantão de ${caregiver.name}`);
-    rateInput.value = generateRates[profileId] ?? "";
-    rateInput.addEventListener("input", () => { generateRates[profileId] = rateInput.value; });
-
-    item.append(position, name, rateInput, buttons);
+    item.append(position, name, buttons);
     reorderList.append(item);
   });
 }
@@ -638,9 +624,7 @@ generateForm.addEventListener("submit", async (event) => {
       firstStartTime: formData.firstStartTime,
       secondStartTime: formData.durationHours === "12" ? timeAfter12Hours(formData.firstStartTime) : null,
       caregiverIds: orderedCaregiverIds,
-      caregiverRates: Object.fromEntries(orderedCaregiverIds
-        .filter((id) => String(generateRates[id] ?? "").trim() !== "")
-        .map((id) => [id, generateRates[id]])),
+      shiftRate: formData.shiftRate,
     });
     await loadMonth();
   } catch (error) {
@@ -676,7 +660,6 @@ async function loadMonth() {
       currentShifts = [];
       calendarShifts = [];
       orderedCaregiverIds = [];
-      generateRates = {};
       generateForm.reset();
       toggleSecondStartField();
       renderCaregiverChecklist();
@@ -723,50 +706,12 @@ function showPaymentsEmpty(text) {
   paymentsEmpty.hidden = false;
 }
 
-function rateCaregivers() {
-  const caregivers = new Map();
-  currentScheduleMonth.caregivers.forEach((caregiver) => caregivers.set(String(caregiver.profileId), caregiver.name));
-  currentShifts.forEach((shift) => {
-    if (!caregivers.has(String(shift.profileId))) caregivers.set(String(shift.profileId), shift.profileName);
-  });
-  return [...caregivers].map(([profileId, name]) => ({ profileId, name }));
-}
-
-function renderRatesForm() {
-  const rated = new Set((currentScheduleMonth.ratedProfileIds || []).map(String));
-  ratesList.replaceChildren();
-  rateCaregivers().forEach(({ profileId, name }) => {
-    const item = document.createElement("li");
-    item.className = "rates-list__item";
-    const inputId = `rate-input-${profileId}`;
-
-    const label = document.createElement("label");
-    label.className = "rates-list__name";
-    label.htmlFor = inputId;
-    label.textContent = name;
-
-    const status = document.createElement("span");
-    status.className = `rates-list__status${rated.has(profileId) ? " rates-list__status--set" : ""}`;
-    status.textContent = rated.has(profileId) ? "Valor definido" : "Sem valor";
-
-    const input = document.createElement("input");
-    input.id = inputId;
-    input.type = "number";
-    input.min = "0";
-    input.step = "0.01";
-    input.inputMode = "decimal";
-    input.name = profileId;
-    input.placeholder = rated.has(profileId) ? "Novo valor (R$)" : "Valor (R$)";
-
-    item.append(label, status, input);
-    ratesList.append(item);
-  });
-}
-
-function closeRatesForm() {
-  ratesForm.hidden = true;
-  ratesForm.reset();
-  ratesMessage.textContent = "";
+function renderRateForm() {
+  rateMessage.textContent = "";
+  rateForm.hidden = !currentScheduleMonth;
+  if (!currentScheduleMonth) return;
+  const { shiftRateCents } = currentScheduleMonth;
+  shiftRateInput.value = shiftRateCents === null || shiftRateCents === undefined ? "" : (shiftRateCents / 100).toFixed(2);
 }
 
 async function loadPayments() {
@@ -779,8 +724,7 @@ async function loadPayments() {
   paymentsEmpty.hidden = true;
   earningsSummary.hidden = true;
   earningsNote.hidden = true;
-  closeRatesForm();
-  ratesToggleButton.hidden = !currentScheduleMonth;
+  renderRateForm();
 
   if (!currentScheduleMonth) {
     showPaymentsEmpty("Nenhuma escala gerada para este mês. Gere a escala na aba Escala.");
@@ -804,30 +748,14 @@ async function loadPayments() {
   }
 }
 
-ratesToggleButton.addEventListener("click", () => {
-  if (!ratesForm.hidden) {
-    closeRatesForm();
-    return;
-  }
-  renderRatesForm();
-  ratesForm.hidden = false;
-});
-ratesCancelButton.addEventListener("click", closeRatesForm);
-
-ratesForm.addEventListener("submit", async (event) => {
+rateForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const rates = Object.fromEntries([...new FormData(ratesForm).entries()]
-    .filter(([, value]) => String(value).trim() !== ""));
-  if (!Object.keys(rates).length) {
-    ratesMessage.textContent = "Preencha ao menos um valor";
-    return;
-  }
-  ratesMessage.textContent = "Salvando...";
+  rateMessage.textContent = "Salvando...";
   try {
-    await ScheduleRepository.setRates(currentScheduleMonth.id, rates);
+    await ScheduleRepository.setShiftRate(currentScheduleMonth.id, shiftRateInput.value);
     await loadMonth();
   } catch (error) {
-    ratesMessage.textContent = error.message;
+    rateMessage.textContent = error.message;
   }
 });
 

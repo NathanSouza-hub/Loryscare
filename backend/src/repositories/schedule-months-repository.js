@@ -6,7 +6,8 @@ const MONTH_FIELDS = `
   month,
   duration_hours AS "durationHours",
   to_char(first_start_time, 'HH24:MI') AS "firstStartTime",
-  to_char(second_start_time, 'HH24:MI') AS "secondStartTime"
+  to_char(second_start_time, 'HH24:MI') AS "secondStartTime",
+  shift_rate_cents AS "shiftRateCents"
 `;
 
 async function findByYearMonth(userId, year, month) {
@@ -28,64 +29,36 @@ async function getCaregivers(scheduleMonthId) {
   return result.rows;
 }
 
-async function getRatedProfileIds(scheduleMonthId) {
-  const result = await pool.query(
-    "SELECT profile_id::text AS \"profileId\" FROM schedule_month_rates WHERE schedule_month_id = $1",
-    [scheduleMonthId],
-  );
-  return result.rows.map((row) => row.profileId);
-}
-
-async function insertRates(client, scheduleMonthId, rates) {
-  for (const { profileId, rateCents } of rates) {
-    await client.query(
-      `INSERT INTO schedule_month_rates (schedule_month_id, profile_id, rate_cents) VALUES ($1, $2, $3)
-       ON CONFLICT (schedule_month_id, profile_id)
-       DO UPDATE SET rate_cents = EXCLUDED.rate_cents, updated_at = CURRENT_TIMESTAMP`,
-      [scheduleMonthId, profileId, rateCents],
-    );
-  }
-}
-
-async function upsertRates(scheduleMonthId, rates) {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    await insertRates(client, scheduleMonthId, rates);
-    await client.query("COMMIT");
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
+async function updateShiftRate(scheduleMonthId, shiftRateCents) {
+  await pool.query("UPDATE schedule_months SET shift_rate_cents = $2 WHERE id = $1", [scheduleMonthId, shiftRateCents]);
 }
 
 async function getEarningsData(scheduleMonthId, profileId) {
   const result = await pool.query(
     `SELECT sm.duration_hours AS "durationHours",
-            smr.rate_cents AS "rateCents",
+            sm.shift_rate_cents AS "rateCents",
             COALESCE((
               SELECT SUM(EXTRACT(EPOCH FROM ss.scheduled_end_at - ss.scheduled_start_at) / 60)
               FROM schedule_shifts ss
               WHERE ss.schedule_month_id = sm.id AND ss.profile_id = $2
             ), 0)::float AS "totalMinutes"
      FROM schedule_months sm
-     LEFT JOIN schedule_month_rates smr ON smr.schedule_month_id = sm.id AND smr.profile_id = $2
      WHERE sm.id = $1`,
     [scheduleMonthId, profileId],
   );
   return result.rows[0];
 }
 
-async function create({ userId, year, month, durationHours, firstStartTime, secondStartTime, caregiverIds, slots, rates = [] }) {
+async function create({
+  userId, year, month, durationHours, firstStartTime, secondStartTime, caregiverIds, slots, shiftRateCents = null,
+}) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
     const monthResult = await client.query(
-      `INSERT INTO schedule_months (user_id, year, month, duration_hours, first_start_time, second_start_time)
-       VALUES ($1, $2, $3, $4, $5::time, $6::time) RETURNING id`,
-      [userId, year, month, durationHours, firstStartTime, secondStartTime],
+      `INSERT INTO schedule_months (user_id, year, month, duration_hours, first_start_time, second_start_time, shift_rate_cents)
+       VALUES ($1, $2, $3, $4, $5::time, $6::time, $7) RETURNING id`,
+      [userId, year, month, durationHours, firstStartTime, secondStartTime, shiftRateCents],
     );
     const scheduleMonthId = monthResult.rows[0].id;
     for (let index = 0; index < caregiverIds.length; index += 1) {
@@ -101,7 +74,6 @@ async function create({ userId, year, month, durationHours, firstStartTime, seco
         [scheduleMonthId, userId, slot.scheduledStartAt, slot.scheduledEndAt, slot.profileId],
       );
     }
-    await insertRates(client, scheduleMonthId, rates);
     await client.query("COMMIT");
     return scheduleMonthId;
   } catch (error) {
@@ -136,6 +108,5 @@ async function remove(id, userId) {
 }
 
 module.exports = Object.freeze({
-  belongsToUser, create, findByYearMonth, getCaregivers, getEarningsData, getRatedProfileIds, hasStartedShift, remove,
-  upsertRates,
+  belongsToUser, create, findByYearMonth, getCaregivers, getEarningsData, hasStartedShift, remove, updateShiftRate,
 });

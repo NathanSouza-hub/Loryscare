@@ -92,68 +92,47 @@ function validateInput(input) {
 
 const MAX_RATE_CENTS = 100000000;
 
-function parseRates(rawRates) {
-  if (rawRates == null) return [];
-  if (typeof rawRates !== "object" || Array.isArray(rawRates)) {
-    throw new ScheduleMonthValidationError({ rates: "Valores do plantão inválidos" });
+function parseShiftRate(rawValue) {
+  if (rawValue === null || rawValue === undefined || String(rawValue).trim() === "") return null;
+  const value = Number(String(rawValue).trim().replace(",", "."));
+  const rateCents = Math.round(value * 100);
+  if (!Number.isFinite(value) || rateCents < 0 || rateCents > MAX_RATE_CENTS) {
+    throw new ScheduleMonthValidationError({ shiftRate: "Informe um valor de plantão válido" });
   }
-  const rates = [];
-  for (const [profileId, rawValue] of Object.entries(rawRates)) {
-    if (rawValue === null || rawValue === undefined || String(rawValue).trim() === "") continue;
-    const value = Number(String(rawValue).trim().replace(",", "."));
-    const rateCents = Math.round(value * 100);
-    if (!/^\d+$/.test(profileId) || !Number.isFinite(value) || rateCents < 0 || rateCents > MAX_RATE_CENTS) {
-      throw new ScheduleMonthValidationError({ rates: "Informe um valor de plantão válido" });
-    }
-    rates.push({ profileId, rateCents });
-  }
-  return rates;
+  return rateCents;
 }
 
 function createScheduleMonthsService(repository, caregiverProfilesRepository) {
-  async function assertRateProfilesBelongToUser(rates, userId) {
-    for (const { profileId } of rates) {
-      if (!(await caregiverProfilesRepository.belongsToUser(profileId, userId))) {
-        throw new ScheduleMonthValidationError({ rates: "Cuidador inválido" });
-      }
-    }
-  }
-
   async function create(input, userId) {
     const data = validateInput(input ?? {});
-    const rates = parseRates(input?.caregiverRates);
+    const shiftRateCents = parseShiftRate(input?.shiftRate);
     for (const profileId of data.caregiverIds) {
       if (!(await caregiverProfilesRepository.belongsToUser(profileId, userId))) {
         throw new ScheduleMonthValidationError({ caregiverIds: "Cuidador inválido" });
       }
     }
-    await assertRateProfilesBelongToUser(rates, userId);
     if (await repository.findByYearMonth(userId, data.year, data.month)) {
       throw new ScheduleMonthValidationError({
         month: "Já existe uma escala para este mês. Exclua-a antes de gerar novamente.",
       });
     }
     const slots = buildSlots(data);
-    const id = await repository.create({ userId, ...data, slots, rates });
-    return { id, ...data };
+    const id = await repository.create({ userId, ...data, slots, shiftRateCents });
+    return { id, ...data, shiftRateCents };
   }
 
   async function getByYearMonth(year, month, userId) {
     const scheduleMonth = await repository.findByYearMonth(userId, Number(year), Number(month));
     if (!scheduleMonth) return null;
-    const [caregivers, ratedProfileIds] = await Promise.all([
-      repository.getCaregivers(scheduleMonth.id),
-      repository.getRatedProfileIds(scheduleMonth.id),
-    ]);
-    return { ...scheduleMonth, caregivers, ratedProfileIds };
+    const caregivers = await repository.getCaregivers(scheduleMonth.id);
+    return { ...scheduleMonth, caregivers };
   }
 
-  async function setRates(id, input, userId) {
+  async function setShiftRate(id, input, userId) {
     if (!(await repository.belongsToUser(id, userId))) throw new ScheduleMonthNotFoundError();
-    const rates = parseRates(input?.rates);
-    if (!rates.length) throw new ScheduleMonthValidationError({ rates: "Informe ao menos um valor" });
-    await assertRateProfilesBelongToUser(rates, userId);
-    await repository.upsertRates(id, rates);
+    const shiftRateCents = parseShiftRate(input?.shiftRate);
+    if (shiftRateCents === null) throw new ScheduleMonthValidationError({ shiftRate: "Informe o valor do plantão" });
+    await repository.updateShiftRate(id, shiftRateCents);
   }
 
   async function getEarnings(id, userId, profileId) {
@@ -175,7 +154,7 @@ function createScheduleMonthsService(repository, caregiverProfilesRepository) {
     await repository.remove(id, userId);
   }
 
-  return Object.freeze({ create, getByYearMonth, getEarnings, remove, setRates });
+  return Object.freeze({ create, getByYearMonth, getEarnings, remove, setShiftRate });
 }
 
 module.exports = createScheduleMonthsService;

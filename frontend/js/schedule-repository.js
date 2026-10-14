@@ -28,8 +28,8 @@ const ScheduleRepository = (() => {
   async function getEarnings(monthId) {
     return (await request(`${MONTHS_URL}/${monthId}/earnings`)).data;
   }
-  async function setRates(monthId, rates) {
-    await request(`${MONTHS_URL}/${monthId}/rates`, { method: "PUT", body: JSON.stringify({ rates }) });
+  async function setShiftRate(monthId, shiftRate) {
+    await request(`${MONTHS_URL}/${monthId}/rate`, { method: "PUT", body: JSON.stringify({ shiftRate }) });
   }
   async function listShifts(year, month) {
     return (await request(`${SHIFTS_URL}?year=${year}&month=${month}`)).data;
@@ -51,7 +51,7 @@ const ScheduleRepository = (() => {
   }
 
   return Object.freeze({
-    deleteMonth, deleteShift, generateMonth, getCurrentShift, getEarnings, getMonth, listShifts, setRates, splitShift,
+    deleteMonth, deleteShift, generateMonth, getCurrentShift, getEarnings, getMonth, listShifts, setShiftRate, splitShift,
     swapShifts, updateShift,
   });
 })();

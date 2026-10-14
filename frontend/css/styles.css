@@ -2039,63 +2039,6 @@ tbody tr:last-child td {
   margin: 0;
 }
 
-.rates-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin: 16px 0;
-  padding: 0;
-  list-style: none;
-}
-
-.rates-list__item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 10px 14px;
-  background: var(--surface-muted);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-}
-
-.rates-list__name {
-  flex: 1;
-  min-width: 8rem;
-  font-weight: 600;
-}
-
-.rates-list__status {
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-}
-
-.rates-list__status--set {
-  color: var(--success);
-  font-weight: 600;
-}
-
-.rates-list__item input,
-.reorder-list__rate {
-  width: 11rem;
-  max-width: 100%;
-  padding: 8px 10px;
-  color: var(--text);
-  background: #ffffff;
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-sm);
-  font: inherit;
-}
-
-.rates-list__item input:focus,
-.reorder-list__rate:focus {
-  border-color: var(--primary);
-  outline: 3px solid var(--primary-light);
-}
-
-.reorder-list__item {
-  flex-wrap: wrap;
-}
 
 .shift-calendar-guide {
   display: flex;

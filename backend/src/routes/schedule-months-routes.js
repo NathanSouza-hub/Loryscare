@@ -5,7 +5,7 @@ function createScheduleMonthsRouter(controller) {
   router.get("/", controller.getByYearMonth);
   router.post("/", controller.create);
   router.get("/:id/earnings", controller.getEarnings);
-  router.put("/:id/rates", controller.setRates);
+  router.put("/:id/rate", controller.setShiftRate);
   router.delete("/:id", controller.remove);
   return router;
 }
