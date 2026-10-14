@@ -5,7 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Anotações de enfermagem e evolução de plantão no Lory's Care." />
     <title>Anotações de enfermagem | Lory's Care</title>
-    <link rel="stylesheet" href="css/styles.css" />
+    <script>
+      (function () {
+        var theme = "system";
+        try { theme = localStorage.getItem("loreroutine:theme") || "system"; } catch (error) {}
+        var dark = theme === "dark"
+          || (theme !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+      })();
+    </script>
+    <link rel="stylesheet" href="css/styles.css?v=20261013-3" />
   </head>
   <body>
     <div class="app-shell">
@@ -40,7 +49,7 @@
       </aside>
 
       <div class="main-area">
-        <header class="topbar"><div class="container topbar__content"><p class="current-date" id="current-date"></p><div class="account-menu" id="account-menu"></div></div></header>
+        <header class="topbar"><div class="container topbar__content"><p class="current-date" id="current-date"></p><div data-theme-toggle></div><div class="account-menu" id="account-menu"></div></div></header>
 
         <main class="main-content container">
           <section class="page-header">
@@ -97,6 +106,7 @@
         <footer><div class="container"><p><span class="footer-heart"></span>Lory's Care — apoio para o cuidado cotidiano.</p></div></footer>
       </div>
     </div>
+    <script src="js/theme-toggle.js"></script>
     <script src="js/config.js"></script>
     <script src="js/auth-context.js"></script>
     <script src="js/caregiver-profiles-repository.js?v=20260824-1"></script>
