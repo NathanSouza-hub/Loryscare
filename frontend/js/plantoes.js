@@ -27,6 +27,8 @@ const closeDayModalButton = document.querySelector("#close-day-modal-button");
 const tabButtons = document.querySelectorAll(".tab-button");
 const tabEscala = document.querySelector("#tab-escala");
 const tabPagamentos = document.querySelector("#tab-pagamentos");
+const tabRelatorios = document.querySelector("#tab-relatorios");
+const periodSelectors = document.querySelector(".tabs-row .schedule-period-selectors");
 const paymentsLabel = document.querySelector("#payments-label");
 const paymentsMessage = document.querySelector("#payments-message");
 const paymentsEmpty = document.querySelector("#payments-empty");
@@ -689,11 +691,14 @@ async function loadMonth() {
 function showTab(name) {
   tabEscala.hidden = name !== "escala";
   tabPagamentos.hidden = name !== "pagamentos";
+  tabRelatorios.hidden = name !== "relatorios";
+  periodSelectors.hidden = name === "relatorios";
   tabButtons.forEach((btn) => {
     const active = btn.dataset.tab === name;
     btn.classList.toggle("tab-button--active", active);
     btn.setAttribute("aria-selected", String(active));
   });
+  if (name === "relatorios") PaymentReportsTab.activate();
 }
 tabButtons.forEach((btn) => btn.addEventListener("click", () => showTab(btn.dataset.tab)));
 
@@ -781,4 +786,5 @@ CaregiverProfilesRepository.getAll().then((caregivers) => {
 
 LiveUpdates.connect((event) => {
   if (["schedule-months", "schedule-shifts"].includes(event.resource)) loadMonth();
+  PaymentReportsTab.handleLiveUpdate(event);
 });

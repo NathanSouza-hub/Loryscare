@@ -46,6 +46,10 @@ const createScheduleShiftsController = require("./controllers/schedule-shifts-co
 const scheduleShiftsRepository = require("./repositories/schedule-shifts-repository");
 const createScheduleShiftsRouter = require("./routes/schedule-shifts-routes");
 const createScheduleShiftsService = require("./services/schedule-shifts-service");
+const createPaymentReportsController = require("./controllers/payment-reports-controller");
+const paymentReportsRepository = require("./repositories/payment-reports-repository");
+const createPaymentReportsRouter = require("./routes/payment-reports-routes");
+const createPaymentReportsService = require("./services/payment-reports-service");
 const createRequireAuth = require("./middleware/require-auth");
 const createAttachProfile = require("./middleware/attach-profile");
 const createChangeBus = require("./realtime/change-bus");
@@ -103,6 +107,10 @@ app.use("/api/schedule-months", requireAuth, attachProfile, createScheduleMonths
 const scheduleShiftsService = createScheduleShiftsService(scheduleShiftsRepository, caregiverProfilesRepository);
 const scheduleShiftsController = createScheduleShiftsController(scheduleShiftsService, changeBus);
 app.use("/api/schedule-shifts", requireAuth, attachProfile, createScheduleShiftsRouter(scheduleShiftsController));
+
+const paymentReportsService = createPaymentReportsService(paymentReportsRepository, caregiverProfilesRepository);
+const paymentReportsController = createPaymentReportsController(paymentReportsService, changeBus);
+app.use("/api/payment-reports", requireAuth, attachProfile, createPaymentReportsRouter(paymentReportsController));
 
 app.get("/api/stream", (request, response) => {
   let userId;
