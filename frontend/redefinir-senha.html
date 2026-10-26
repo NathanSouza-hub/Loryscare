@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Criar uma nova senha no Lory's Care." />
+    <meta name="referrer" content="no-referrer" />
+    <title>Nova senha | Lory's Care</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="auth-page">
+      <div class="auth-card">
+        <a class="brand" href="login.html"><span class="brand__icon"></span>Lory's<span> Care</span></a>
+        <p class="sidebar__tagline">Cuidado que acolhe. Rotina que faz bem.</p>
+        <h1>Criar nova senha</h1>
+        <p class="auth-subtitle">Escolha uma senha com ao menos 8 caracteres.</p>
+
+        <form id="reset-form">
+          <div class="form-field">
+            <label for="new-password">Nova senha</label>
+            <div class="password-field">
+              <input id="new-password" name="newPassword" type="password" minlength="8" required autocomplete="new-password" />
+              <button class="password-toggle" type="button" aria-label="Mostrar senha" title="Mostrar senha">
+                <span class="icon" data-icon="eye"></span>
+              </button>
+            </div>
+          </div>
+          <div class="form-field" style="margin-top: 16px">
+            <label for="confirm-password">Confirmar nova senha</label>
+            <input id="confirm-password" name="confirmPassword" type="password" minlength="8" required autocomplete="new-password" />
+          </div>
+          <div class="form-actions" style="margin-top: 24px">
+            <button class="primary-button" id="submit-button" type="submit">Salvar nova senha</button>
+            <p class="form-message" id="form-message" aria-live="polite"></p>
+          </div>
+        </form>
+
+        <p class="auth-footer"><a href="login.html">Voltar para o login</a></p>
+      </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/icons.js"></script>
+    <script src="js/ui-icons.js"></script>
+    <script src="js/password-toggle.js"></script>
+    <script src="js/auth-repository.js"></script>
+    <script src="js/redefinir-senha.js"></script>
+  </body>
+</html>

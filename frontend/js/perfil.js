@@ -84,9 +84,22 @@ profileForm.addEventListener("submit", async (event) => {
   }
 });
 
+function applyPasswordMode() {
+  const withoutCurrent = AuthContext.canChangePasswordWithoutCurrent();
+  const currentField = document.querySelector("#current-password-field");
+  currentField.hidden = withoutCurrent;
+  currentField.querySelector("input").required = !withoutCurrent;
+  document.querySelector("#google-password-hint").hidden = !withoutCurrent;
+  document.querySelector("#senha-title").textContent = withoutCurrent ? "Definir nova senha" : "Mudar senha";
+}
+
+applyPasswordMode();
+document.querySelector("#tab-button-senha").addEventListener("click", applyPasswordMode);
+
 passwordForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(passwordForm).entries());
+  if (document.querySelector("#current-password-field").hidden) delete data.currentPassword;
   if (data.newPassword !== data.confirmNewPassword) {
     passwordMessage.textContent = "As senhas não coincidem.";
     return;

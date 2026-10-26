@@ -1624,6 +1624,49 @@ tbody tr:last-child td {
   text-decoration: none;
 }
 
+.google-signin__button {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.google-signin .form-message:empty {
+  display: none;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-link {
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-link--end {
+  align-self: flex-end;
+}
+
+.auth-link:hover,
+.auth-footer a:hover {
+  text-decoration: underline;
+}
+
 .sidebar__user {
   margin: auto 0 0;
   padding: 0 14px;

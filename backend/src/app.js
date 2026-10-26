@@ -30,6 +30,9 @@ const createAuthController = require("./controllers/auth-controller");
 const usersRepository = require("./repositories/users-repository");
 const createAuthRouter = require("./routes/auth-routes");
 const createAuthService = require("./services/auth-service");
+const passwordResetTokensRepository = require("./repositories/password-reset-tokens-repository");
+const createGoogleIdTokenVerifier = require("./integrations/google-id-token-verifier");
+const createMailer = require("./integrations/mailer");
 const createCaregiverProfilesController = require("./controllers/caregiver-profiles-controller");
 const caregiverProfilesRepository = require("./repositories/caregiver-profiles-repository");
 const createCaregiverProfilesRouter = require("./routes/caregiver-profiles-routes");
@@ -57,7 +60,11 @@ app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
 app.use(express.json({ limit: "2mb" }));
 app.use(express.static(path.join(__dirname, "../../frontend")));
 
-const authService = createAuthService(usersRepository);
+const authService = createAuthService(usersRepository, {
+  verifyGoogleIdToken: createGoogleIdTokenVerifier(),
+  resetTokens: passwordResetTokensRepository,
+  mailer: createMailer(),
+});
 const authController = createAuthController(authService);
 const requireAuth = createRequireAuth(authService);
 const attachProfile = createAttachProfile(caregiverProfilesRepository);

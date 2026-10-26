@@ -24,6 +24,25 @@ const AuthContext = (() => {
     else localStorage.removeItem(AVATAR_STORAGE_KEY);
   }
 
+  function getTokenPayload() {
+    const token = getToken();
+    if (!token) return null;
+    try {
+      const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+      return JSON.parse(atob(base64));
+    } catch {
+      return null;
+    }
+  }
+
+  // Espelha a regra do backend: logo após entrar com Google, dá para trocar a senha sem a atual.
+  const GOOGLE_PASSWORD_CHANGE_WINDOW_SECONDS = 15 * 60;
+  function canChangePasswordWithoutCurrent() {
+    const payload = getTokenPayload();
+    if (payload?.authMethod !== "google" || !payload.iat) return false;
+    return Date.now() / 1000 - payload.iat <= GOOGLE_PASSWORD_CHANGE_WINDOW_SECONDS;
+  }
+
   function setSession(token, userName) {
     localStorage.setItem(STORAGE_KEY, token);
     if (userName) localStorage.setItem(USER_STORAGE_KEY, userName);
@@ -57,5 +76,8 @@ const AuthContext = (() => {
     if (userLabel) userLabel.textContent = getUserName();
   });
 
-  return Object.freeze({ authHeader, getAvatar, getToken, getUserName, logout, setAvatar, setSession, setUserName });
+  return Object.freeze({
+    authHeader, canChangePasswordWithoutCurrent, getAvatar, getToken, getUserName, logout, setAvatar, setSession,
+    setUserName,
+  });
 })();

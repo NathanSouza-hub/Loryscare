@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Recuperar acesso ao Lory's Care." />
+    <title>Esqueci minha senha | Lory's Care</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="auth-page">
+      <div class="auth-card">
+        <a class="brand" href="login.html"><span class="brand__icon"></span>Lory's<span> Care</span></a>
+        <p class="sidebar__tagline">Cuidado que acolhe. Rotina que faz bem.</p>
+        <h1>Esqueci minha senha</h1>
+        <p class="auth-subtitle">Informe o e-mail da sua conta e enviaremos um link para criar uma nova senha.</p>
+
+        <form id="forgot-form">
+          <div class="form-field">
+            <label for="email">E-mail</label>
+            <input id="email" name="email" type="email" required autocomplete="email" />
+          </div>
+          <div class="form-actions" style="margin-top: 24px">
+            <button class="primary-button" id="submit-button" type="submit">Enviar link</button>
+            <p class="form-message" id="form-message" aria-live="polite"></p>
+          </div>
+        </form>
+
+        <p class="auth-footer"><a href="login.html">Voltar para o login</a></p>
+      </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth-repository.js"></script>
+    <script src="js/esqueci-senha.js"></script>
+  </body>
+</html>

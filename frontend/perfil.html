@@ -72,8 +72,9 @@
           <section class="form-panel" id="tab-senha" aria-labelledby="senha-title" hidden>
             <h2 id="senha-title">Mudar senha</h2>
             <form id="password-form">
+              <p class="form-hint" id="google-password-hint" hidden>Você entrou com o Google, então pode definir uma nova senha sem informar a atual.</p>
               <div class="form-grid">
-                <div class="form-field"><label for="current-password">Senha atual</label><input id="current-password" name="currentPassword" type="password" required autocomplete="current-password" /></div>
+                <div class="form-field" id="current-password-field"><label for="current-password">Senha atual</label><input id="current-password" name="currentPassword" type="password" required autocomplete="current-password" /></div>
                 <div class="form-field"><label for="new-password">Nova senha</label><input id="new-password" name="newPassword" type="password" minlength="8" required autocomplete="new-password" /></div>
                 <div class="form-field"><label for="confirm-new-password">Confirmar nova senha</label><input id="confirm-new-password" name="confirmNewPassword" type="password" minlength="8" required autocomplete="new-password" /></div>
               </div>
@@ -145,6 +146,6 @@
     <script src="js/sidebar-toggle.js"></script>
     <script src="js/patient-context.js"></script>
     <script src="js/auth-repository.js"></script>
-    <script src="js/perfil.js?v=20260824-2"></script>
+    <script src="js/perfil.js?v=20261005-1"></script>
   </body>
 </html>

@@ -15,6 +15,12 @@
         <h1>Entrar</h1>
         <p class="auth-subtitle">Acesse sua conta de cuidador.</p>
 
+        <div class="google-signin" id="google-signin" hidden>
+          <div class="google-signin__button" id="google-signin-button"></div>
+          <p class="form-message" id="google-signin-message" aria-live="polite"></p>
+          <div class="auth-divider"><span>ou</span></div>
+        </div>
+
         <form id="login-form">
           <div class="form-field">
             <label for="email">E-mail</label>
@@ -28,6 +34,7 @@
                 <span class="icon" data-icon="eye"></span>
               </button>
             </div>
+            <a class="auth-link auth-link--end" href="esqueci-senha.html">Esqueci minha senha</a>
           </div>
           <div class="form-actions" style="margin-top: 24px">
             <button class="primary-button" id="submit-button" type="submit">Entrar</button>
@@ -45,5 +52,6 @@
     <script src="js/password-toggle.js"></script>
     <script src="js/auth-repository.js"></script>
     <script src="js/login.js"></script>
+    <script src="js/google-signin.js"></script>
   </body>
 </html>
