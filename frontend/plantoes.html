@@ -14,7 +14,7 @@
         document.documentElement.dataset.theme = dark ? "dark" : "light";
       })();
     </script>
-    <link rel="stylesheet" href="css/styles.css?v=20261013-3" />
+    <link rel="stylesheet" href="css/styles.css?v=20261023-1" />
   </head>
   <body>
     <div class="app-shell">
@@ -61,6 +61,7 @@
             <div class="tabs" role="tablist">
               <button class="tab-button" id="tab-button-escala" type="button" role="tab" data-tab="escala">Escala</button>
               <button class="tab-button" id="tab-button-pagamentos" type="button" role="tab" data-tab="pagamentos">Pagamentos</button>
+              <button class="tab-button" id="tab-button-relatorios" type="button" role="tab" data-tab="relatorios">Relatórios</button>
             </div>
             <div class="history-panel__header-actions schedule-period-selectors">
               <select class="schedule-period-select schedule-period-select--month" id="month-select" aria-label="Mês"></select>
@@ -167,6 +168,64 @@
               </div>
             </form>
           </section>
+
+          <div id="tab-relatorios" hidden>
+            <section class="history-panel" id="reports-list-view" aria-labelledby="reports-label">
+              <div class="history-panel__header">
+                <div><p class="eyebrow">Relatórios</p><h2 id="reports-label">Relatórios de pagamento</h2></div>
+              </div>
+              <form class="report-create-form" id="report-create-form">
+                <h3>Novo relatório</h3>
+                <p class="earnings-note">Os plantões que começam dentro do período são copiados da escala, com o valor do plantão de cada mês. Depois você pode editar o relatório sem alterar a escala.</p>
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label for="report-cycle-select">Pagamento</label>
+                    <select id="report-cycle-select" name="cycleDay" required>
+                      <option value="5">Dia 05</option>
+                      <option value="20">Dia 20</option>
+                    </select>
+                  </div>
+                  <div class="form-field"><label for="report-start-date">Data inicial</label><input id="report-start-date" name="startDate" type="date" required /></div>
+                  <div class="form-field"><label for="report-end-date">Data final</label><input id="report-end-date" name="endDate" type="date" required /></div>
+                </div>
+                <div class="form-actions">
+                  <button class="primary-button" type="submit">Criar relatório</button>
+                  <p class="form-message" id="report-create-message" aria-live="polite"></p>
+                </div>
+              </form>
+              <h3 class="reports-list-title">Relatórios salvos</h3>
+              <p class="form-message" id="reports-list-message" aria-live="polite"></p>
+              <p class="empty-history" id="reports-empty" hidden>Nenhum relatório criado ainda.</p>
+              <div class="table-wrapper" id="reports-table-wrapper" hidden>
+                <table>
+                  <thead><tr><th>Pagamento</th><th>Período</th><th>Total</th><th>Ações</th></tr></thead>
+                  <tbody id="reports-table-body"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="history-panel" id="report-detail-view" aria-labelledby="report-detail-label" hidden>
+              <div class="history-panel__header">
+                <div><p class="eyebrow" id="report-detail-eyebrow">Relatório</p><h2 id="report-detail-label"></h2></div>
+                <div class="history-panel__header-actions report-detail-actions">
+                  <button class="secondary-button" id="report-back-button" type="button">Voltar</button>
+                  <button class="secondary-button" id="report-add-button" type="button">+ Lançamento</button>
+                  <button class="secondary-button" id="report-recalculate-button" type="button">Recalcular pela escala</button>
+                  <button class="primary-button" id="report-print-all-button" type="button"><span class="icon" data-icon="fileText"></span>PDF de todos</button>
+                </div>
+              </div>
+              <p class="form-message" id="report-detail-message" aria-live="polite"></p>
+              <div class="report-warnings" id="report-warnings" hidden></div>
+              <dl class="schedule-summary" aria-label="Resumo do relatório">
+                <div class="schedule-summary__item"><dt>Cuidadores</dt><dd id="report-summary-caregivers"></dd></div>
+                <div class="schedule-summary__item"><dt>Plantões</dt><dd id="report-summary-shifts"></dd></div>
+                <div class="schedule-summary__item"><dt>Horas</dt><dd id="report-summary-hours"></dd></div>
+                <div class="schedule-summary__item earnings-total"><dt>Total geral</dt><dd id="report-summary-total"></dd></div>
+              </dl>
+              <p class="empty-history" id="report-detail-empty" hidden>Nenhum plantão neste período. Use “+ Lançamento” para adicionar.</p>
+              <div id="report-caregivers"></div>
+            </section>
+          </div>
         </main>
 
         <div class="modal-overlay" id="day-modal-overlay" hidden>
@@ -179,9 +238,25 @@
             <div id="day-modal-body"></div>
           </div>
         </div>
+        <div class="modal-overlay" id="report-modal-overlay" hidden>
+          <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
+            <div class="modal-box__header">
+              <h3 id="report-modal-title"></h3>
+              <button class="table-action table-action--icon" type="button" id="close-report-modal-button" aria-label="Fechar">✕</button>
+            </div>
+            <form id="report-modal-form">
+              <div class="form-grid" id="report-modal-fields"></div>
+              <div class="form-actions">
+                <button class="primary-button" type="submit">Salvar</button>
+                <p class="form-message" id="report-modal-message" aria-live="polite"></p>
+              </div>
+            </form>
+          </div>
+        </div>
         <footer><div class="container"><p><span class="footer-heart"></span>Lory's Care — apoio para o cuidado cotidiano.</p></div></footer>
       </div>
     </div>
+    <div class="report-print" id="report-print" aria-hidden="true"></div>
     <script src="js/theme-toggle.js"></script>
     <script src="js/config.js"></script>
     <script src="js/auth-context.js"></script>
@@ -194,6 +269,8 @@
     <script src="js/patient-context.js"></script>
     <script src="js/live-updates.js"></script>
     <script src="js/schedule-repository.js?v=20261013-2"></script>
-    <script src="js/plantoes.js?v=20261013-2"></script>
+    <script src="js/payment-reports-repository.js?v=20261023-1"></script>
+    <script src="js/relatorios.js?v=20261023-1"></script>
+    <script src="js/plantoes.js?v=20261023-1"></script>
   </body>
 </html>

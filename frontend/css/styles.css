@@ -2365,6 +2365,135 @@ tbody tr:last-child td {
   gap: 8px;
 }
 
+
+/* Relatórios de pagamento */
+.schedule-period-selectors[hidden] {
+  display: none;
+}
+
+.report-create-form {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: var(--surface-muted);
+  border-radius: var(--radius-sm);
+}
+
+.report-create-form h3,
+.reports-list-title {
+  margin: 0 0 8px;
+}
+
+.report-create-form .form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 720px) {
+  .report-create-form .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.report-create-form .earnings-note {
+  margin: 0 0 16px;
+}
+
+.report-missing-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  color: var(--text);
+  background: var(--warning-light);
+  border: 1px solid var(--warning);
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.report-detail-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.report-detail-actions .icon {
+  margin-right: 6px;
+}
+
+.report-warnings {
+  margin-bottom: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.report-warnings[hidden] {
+  display: none;
+}
+
+.report-warning {
+  margin: 0;
+  padding: 10px 14px;
+  color: var(--text);
+  background: var(--warning-light);
+  border-left: 4px solid var(--warning);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+}
+
+.report-caregiver {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.report-caregiver__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.report-caregiver__header h3 {
+  margin: 0;
+}
+
+.report-caregiver__meta {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.report-caregiver__actions {
+  flex-wrap: wrap;
+}
+
+.report-caregiver td,
+.report-caregiver th {
+  padding: 10px 12px;
+}
+
+.report-amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.report-amount--negative {
+  color: var(--danger);
+}
+
+.report-amount--missing {
+  color: var(--text);
+  font-style: italic;
+  background: var(--warning-light);
+}
+
+.report-adjustment-row td {
+  background: var(--surface-muted);
+}
+
+.report-print {
+  display: none;
+}
+
 @media print {
   @page {
     size: A4 landscape;
@@ -2386,6 +2515,7 @@ tbody tr:last-child td {
   .page-header,
   .tabs-row,
   #tab-pagamentos,
+  #tab-relatorios,
   .schedule-period-selectors,
   #generate-panel,
   #schedule-settings-panel,
@@ -2484,5 +2614,99 @@ tbody tr:last-child td {
 
   .calendar__day:hover {
     border-color: var(--border);
+  }
+}
+
+@page report-page {
+  size: A4 portrait;
+  margin: 12mm;
+}
+
+@media print {
+  body.printing-report .app-shell {
+    display: none !important;
+  }
+
+  body.printing-report .report-print {
+    page: report-page;
+    display: block;
+    color: #111827;
+    font-size: 10.5pt;
+  }
+
+  .report-print__header {
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #176b87;
+  }
+
+  .report-print__header h1 {
+    margin: 0 0 4px;
+    font-size: 15pt;
+  }
+
+  .report-print__header p {
+    margin: 0;
+  }
+
+  .report-print__caregiver {
+    margin-bottom: 14px;
+    break-inside: avoid;
+  }
+
+  .report-print__caregiver h2 {
+    margin: 0 0 6px;
+    font-size: 12pt;
+  }
+
+  .report-print__table {
+    table-layout: fixed;
+  }
+
+  .report-print__table th:nth-child(1) { width: 18%; }
+  .report-print__table th:nth-child(2) { width: 22%; }
+  .report-print__table th:nth-child(3) { width: 12%; }
+  .report-print__table th:nth-child(4) { width: 16%; }
+
+  .report-print__table th,
+  .report-print__table td {
+    padding: 4px 6px;
+    color: #111827;
+    background: none;
+    border-bottom: 1px solid #d1d5db;
+    font-size: 9.5pt;
+    white-space: nowrap;
+  }
+
+  .report-print__table th {
+    font-size: 8pt;
+  }
+
+  .report-print__table td:last-child {
+    white-space: normal;
+  }
+
+  .report-print__amount {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .report-print__adjustment td {
+    font-style: italic;
+  }
+
+  .report-print__subtotal,
+  .report-print__grand-total {
+    margin: 6px 0 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .report-print__grand-total {
+    margin-top: 16px;
+    padding-top: 8px;
+    border-top: 2px solid #176b87;
+    font-size: 12pt;
   }
 }
